@@ -56,10 +56,46 @@ function getOpenNdsLiveStatus() {
   try {
     if (fs.existsSync("/tmp/nds_live_status.json")) {
       const raw = fs.readFileSync("/tmp/nds_live_status.json", "utf8");
-      return JSON.parse(raw);
+      let sanitized = "";
+      let inString = false;
+      let escaped = false;
+      for (let i = 0; i < raw.length; i++) {
+        const char = raw[i];
+        if (escaped) {
+          sanitized += char;
+          escaped = false;
+          continue;
+        }
+        if (char === "\\") {
+          escaped = true;
+          sanitized += char;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          sanitized += char;
+          continue;
+        }
+        if (inString) {
+          if (char === "\n") {
+            sanitized += "\\n";
+            continue;
+          }
+          if (char === "\r") {
+            sanitized += "\\r";
+            continue;
+          }
+          if (char === "\t") {
+            sanitized += "\\t";
+            continue;
+          }
+        }
+        sanitized += char;
+      }
+      return JSON.parse(sanitized);
     }
   } catch (err) {
-    // Abaikan jika berkas belum terbentuk
+    fastify.log.warn(`OpenNDS live status parse warning: ${err.message}`);
   }
   return null;
 }
@@ -380,22 +416,16 @@ fastify.get("/api/admin/sessions", async (request, reply) => {
       else if (v.status === "active") availableUnusedCount++;
       else expiredOrRevokedCount++;
 
-      // Deteksi Real-Time Online
+      // Deteksi Real-Time Online (Hanya jika benar-benar Authenticated di OpenNDS)
       let isOnline = false;
       let downloadedBytes = 0;
       let uploadedBytes = 0;
 
-      if (macLower && ndsClients[macLower]) {
+      if (macLower && ndsClients[macLower] && ndsClients[macLower].state === "Authenticated") {
         isOnline = true;
-        downloadedBytes = ndsClients[macLower].downloaded || 0;
-        uploadedBytes = ndsClients[macLower].uploaded || 0;
-      } else if (
-        isOngoing &&
-        macLower &&
-        (activeArpMacs.has(macLower) || ndsTrusted.includes(macLower))
-      ) {
-        isOnline = true;
-      } else if (isOngoing && v.ip_address && activeArpIps.has(v.ip_address)) {
+        downloadedBytes = parseInt(ndsClients[macLower].download_this_session || ndsClients[macLower].downloaded || 0);
+        uploadedBytes = parseInt(ndsClients[macLower].upload_this_session || ndsClients[macLower].uploaded || 0);
+      } else if (isOngoing && macLower && ndsTrusted.includes(macLower)) {
         isOnline = true;
       }
 
