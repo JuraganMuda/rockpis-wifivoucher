@@ -1253,10 +1253,15 @@
                 Pelanggan akan terputus dari internet detik ini juga dan harus login kembali. Vouchernya <b>tidak dihapus</b>.
             `;
             actionModalConfirmBtn.className = "btn btn-primary";
+            actionModalConfirmBtn.style.background = "";
+            actionModalConfirmBtn.style.color = "";
             actionModalConfirmBtn.textContent = "Putuskan Sekarang";
+            actionModalConfirmBtn.disabled = false;
             actionModal.classList.add("active");
 
             pendingAction = async () => {
+                actionModalConfirmBtn.disabled = true;
+                actionModalConfirmBtn.textContent = "Memutuskan...";
                 try {
                     const res = await fetch("/api/admin/kick", {
                         method: "POST",
@@ -1266,12 +1271,17 @@
                     const data = await res.json();
                     if (data.success) {
                         showToast(data.message, "success");
+                        closeActionModal();
                         fetchSessions();
                     } else {
                         showToast(data.error || "Gagal memutuskan", "error");
+                        closeActionModal();
                     }
                 } catch (e) {
                     showToast("Kesalahan koneksi ke server", "error");
+                    closeActionModal();
+                } finally {
+                    actionModalConfirmBtn.disabled = false;
                 }
             };
         }
@@ -1287,9 +1297,12 @@
             actionModalConfirmBtn.style.background = "#DC2626";
             actionModalConfirmBtn.style.color = "white";
             actionModalConfirmBtn.textContent = "Cabut & Blokir Sekarang";
+            actionModalConfirmBtn.disabled = false;
             actionModal.classList.add("active");
 
             pendingAction = async () => {
+                actionModalConfirmBtn.disabled = true;
+                actionModalConfirmBtn.textContent = "Mencabut...";
                 try {
                     const res = await fetch("/api/revoke", {
                         method: "POST",
@@ -1299,25 +1312,31 @@
                     const data = await res.json();
                     if (data.success) {
                         showToast(data.message, "success");
+                        closeActionModal();
                         fetchSessions();
                     } else {
                         showToast(data.error || "Gagal mencabut voucher", "error");
+                        closeActionModal();
                     }
                 } catch (e) {
                     showToast("Kesalahan koneksi ke server", "error");
+                    closeActionModal();
+                } finally {
+                    actionModalConfirmBtn.disabled = false;
                 }
             };
         }
 
         actionModalConfirmBtn.addEventListener("click", async () => {
-            closeActionModal();
-            if (pendingAction) await pendingAction();
-            pendingAction = null;
+            if (pendingAction) {
+                await pendingAction();
+            }
         });
 
         function closeActionModal() {
             actionModal.classList.remove("active");
             pendingAction = null;
+            actionModalConfirmBtn.disabled = false;
         }
 
         // Create Voucher Modal
