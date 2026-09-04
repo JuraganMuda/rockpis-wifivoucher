@@ -160,7 +160,6 @@
             border: none;
             outline: none;
             font-family: 'Inter', sans-serif;
-            text-decoration: none;
         }
 
         .btn-primary {
@@ -748,6 +747,34 @@
         </div>
     </div>
 
+    <!-- Modal Tambah Voucher Baru -->
+    <div id="createModal" class="app-modal">
+        <div class="modal-body-card">
+            <h3 style="font-family: 'Outfit', sans-serif; margin-bottom: 0.5rem; font-size: 1.25rem;">Buat Voucher Baru</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+                Generate kode voucher instan langsung ke database Rock Pi S.
+            </p>
+            <form id="createVoucherForm">
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NAMA PELANGGAN (TITLE APPSHEET)</label>
+                    <input type="text" id="newCustName" placeholder="Contoh: VIKSA / OPPO ADAM" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                </div>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">PAKET DURASI (STATUS APPSHEET)</label>
+                    <select id="newDuration" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                        <option value="1440">24 Jam/1 Hari</option>
+                        <option value="4320">3 Hari</option>
+                        <option value="10080" selected>7 Hari</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-ghost" onclick="closeCreateModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitCreate">Generate Voucher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Container -->
     <div class="app-container">
         
@@ -773,9 +800,9 @@
                 <button class="btn btn-ghost btn-sm" id="btnRefresh" title="Refresh Sekarang">
                     <span id="refreshIcon">🔄</span> Refresh
                 </button>
-                <a href="https://www.appsheet.com/start/7d08cfb3-e27e-4c11-bc86-ba94a7523c02" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" id="btnOpenAppSheet" style="text-decoration: none;" title="Buka AppSheet untuk Buat Voucher Baru">
-                    ➕ Buat Voucher ↗
-                </a>
+                <button class="btn btn-primary btn-sm" id="btnOpenCreate">
+                    ➕ Buat Voucher
+                </button>
                 <button class="btn btn-ghost btn-sm" id="btnLogout" title="Kunci Dashboard">
                     🔒 Kunci
                 </button>
@@ -902,6 +929,7 @@
         const btnRefresh = document.getElementById("btnRefresh");
         const refreshIcon = document.getElementById("refreshIcon");
         const btnLogout = document.getElementById("btnLogout");
+        const btnOpenCreate = document.getElementById("btnOpenCreate");
         const searchInput = document.getElementById("searchInput");
         const lastUpdatedText = document.getElementById("lastUpdatedText");
 
@@ -910,6 +938,10 @@
         const actionModalTitle = document.getElementById("actionModalTitle");
         const actionModalDesc = document.getElementById("actionModalDesc");
         const actionModalConfirmBtn = document.getElementById("actionModalConfirmBtn");
+
+        // Create Modal
+        const createModal = document.getElementById("createModal");
+        const createVoucherForm = document.getElementById("createVoucherForm");
 
         // Toast Function
         function showToast(message, type = "info") {
@@ -1287,6 +1319,47 @@
             actionModal.classList.remove("active");
             pendingAction = null;
         }
+
+        // Create Voucher Modal
+        btnOpenCreate.addEventListener("click", () => {
+            createModal.classList.add("active");
+        });
+
+        function closeCreateModal() {
+            createModal.classList.remove("active");
+        }
+
+        createVoucherForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const customer_name = document.getElementById("newCustName").value.trim();
+            const duration_minutes = parseInt(document.getElementById("newDuration").value);
+            const btnSubmit = document.getElementById("btnSubmitCreate");
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = "Membuat...";
+
+            try {
+                const res = await fetch("/api/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ customer_name, duration_minutes, pin: savedPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Voucher berhasil dibuat: ${data.code}`, "success");
+                    closeCreateModal();
+                    createVoucherForm.reset();
+                    fetchSessions();
+                } else {
+                    showToast(data.error || "Gagal membuat voucher", "error");
+                }
+            } catch (err) {
+                showToast("Kesalahan koneksi ke server", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = "Generate Voucher";
+            }
+        });
 
         // Helper escape HTML
         function escapeHtml(text) {
