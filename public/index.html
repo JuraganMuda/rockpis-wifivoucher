@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Hotspot Login</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15), transparent 25%);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.25rem;
+            font-family: monospace;
+            text-align: center;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+        }
+
+        .message {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            min-height: 20px;
+        }
+
+        .message.error { color: var(--error); }
+        .message.success { color: var(--success); }
+        
+        .warning-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid var(--error);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #fca5a5;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Full screen loader for auto-login */
+        #autoLoginOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="autoLoginOverlay">
+        <div class="spinner" style="display: block; margin-bottom: 1rem; width: 40px; height: 40px;"></div>
+        <p>Memeriksa sesi Anda...</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>WiFi Access</h1>
+            <p class="subtitle">Masukkan kode voucher Anda untuk terhubung ke internet.</p>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="code">KODE VOUCHER</label>
+                    <input type="text" id="code" name="code" placeholder="XXXXXX" maxlength="6" autocomplete="off" required>
+                </div>
+                
+                <button type="submit" id="submitBtn">
+                    <span id="btnText">Hubungkan</span>
+                    <div class="spinner" id="btnSpinner"></div>
+                </button>
+            </form>
+            
+            <div id="statusMessage" class="message"></div>
+
+            <div class="warning-box">
+                <strong>PENTING:</strong><br>
+                Mohon untuk TIDAK menekan tombol "Lupakan Jaringan" atau "Forget Network" pada pengaturan WiFi <b>"RTNA Wifi Voucher"</b> di HP Anda. Voucher terikat pada perangkat Anda secara permanen.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const fullSearch = window.location.search;
+        let clientip = urlParams.get('clientip') || (fullSearch.match(/[?&]clientip=([^&]+)/) || [])[1] || '';
+        let clientmac = urlParams.get('clientmac') || (fullSearch.match(/[?&]clientmac=([^&]+)/) || [])[1] || '';
+        let tok = urlParams.get('tok') || (fullSearch.match(/[?&]tok=([^&]+)/) || [])[1] || '';
+        let authaction = urlParams.get('authaction') || (fullSearch.match(/[?&]authaction=([^&]+)/) || [])[1] || '';
+        if (authaction && authaction.includes('?')) {
+            authaction = authaction.split('?')[0];
+        }
+
+        const autoLoginOverlay = document.getElementById('autoLoginOverlay');
+        const form = document.getElementById('loginForm');
+        const codeInput = document.getElementById('code');
+        const statusMessage = document.getElementById('statusMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        // Check if there is an active session for this MAC address
+        async function checkAutoLogin() {
+            if (!clientmac) {
+                autoLoginOverlay.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/check_mac', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientmac, clientip, authaction, tok })
+                });
+                
+                const result = await response.json();
+                if (result.active && result.redirect) {
+                    window.location.href = result.redirect;
+                } else {
+                    autoLoginOverlay.style.display = 'none';
+                }
+            } catch (err) {
+                autoLoginOverlay.style.display = 'none';
+            }
+        }
+
+        // Run auto login check
+        checkAutoLogin();
+
+        codeInput.addEventListener('input', function(e) {
+            this.value = this.value.toUpperCase().replace(/[01OIl\s]/g, '');
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const code = codeInput.value;
+            
+            btnText.style.display = 'none';
+            btnSpinner.style.display = 'block';
+            submitBtn.disabled = true;
+            statusMessage.textContent = '';
+            statusMessage.className = 'message';
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, clientmac, clientip, authaction, tok })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    statusMessage.textContent = 'Berhasil! Mengalihkan...';
+                    statusMessage.className = 'message success';
+                    
+                    setTimeout(() => {
+                        if (result.redirect) {
+                            window.location.href = result.redirect;
+                        }
+                    }, 1000);
+                } else {
+                    statusMessage.textContent = result.message || result.error || 'Terjadi kesalahan.';
+                    statusMessage.className = 'message error';
+                }
+            } catch (err) {
+                statusMessage.textContent = 'Gagal terhubung ke server.';
+                statusMessage.className = 'message error';
+            } finally {
+                btnText.style.display = 'block';
+                btnSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

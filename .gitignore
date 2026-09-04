@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment variables, secrets, & credentials
+.env
+.env.*
+*.ppk
+*.pem
+*.key
+
+# Database backups & local data (Amankan data pelanggan, simpan hanya init.sql)
+db_data/
+*.sql
+!init.sql
+
+# Build, PDF Generator, & Temporary Files
+documentation_print.html
+*_NEW.pdf
+*.tmp
+*.log
+test*
+
+# Docker local overrides
+docker-compose.override.yml
+
+# OS & OneDrive / Editor Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+~$*
+*.lnk
+.vscode/
+.idea/

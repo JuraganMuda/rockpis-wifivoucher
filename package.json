@@ -1,0 +1,14 @@
+{
+  "name": "opennds-custom-api",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/static": "^7.0.4",
+    "fastify": "^4.26.2",
+    "mysql2": "^3.9.7"
+  }
+}
