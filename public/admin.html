@@ -228,6 +228,7 @@
             padding: 1.25rem 1.35rem;
             position: relative;
             overflow: hidden;
+            cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stat-card:hover {
@@ -844,7 +845,7 @@
                     <span class="stat-icon">⛔</span>
                 </div>
                 <div class="stat-value" id="statExpired">0</div>
-                <div class="stat-meta">Telah kedaluwarsa atau di-kick</div>
+                <div class="stat-meta">Telah kedaluwarsa atau dicabut</div>
             </div>
         </div>
 
@@ -1086,15 +1087,31 @@
             }
         }
 
+        function setFilter(filterName) {
+            document.querySelectorAll(".pill-btn").forEach(b => {
+                if (b.getAttribute("data-filter") === filterName) {
+                    b.classList.add("active");
+                } else {
+                    b.classList.remove("active");
+                }
+            });
+            activeFilter = filterName;
+            renderVoucherList();
+        }
+
         // Filter Handling
         document.querySelectorAll(".pill-btn").forEach(btn => {
             btn.addEventListener("click", () => {
-                document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                activeFilter = btn.getAttribute("data-filter");
-                renderVoucherList();
+                const filter = btn.getAttribute("data-filter");
+                setFilter(filter);
             });
         });
+
+        // Click on Stat Cards to filter
+        document.querySelector(".card-online")?.addEventListener("click", () => setFilter("online"));
+        document.querySelector(".card-active")?.addEventListener("click", () => setFilter("ongoing"));
+        document.querySelector(".card-unused")?.addEventListener("click", () => setFilter("unused"));
+        document.querySelector(".card-expired")?.addEventListener("click", () => setFilter("inactive"));
 
         searchInput.addEventListener("input", (e) => {
             searchQuery = e.target.value.toLowerCase().trim();
@@ -1112,7 +1129,10 @@
                 if (activeFilter === "online" && !v.is_online) return false;
                 if (activeFilter === "ongoing" && !v.is_ongoing) return false;
                 if (activeFilter === "unused" && v.status !== "active") return false;
-                if (activeFilter === "inactive" && v.is_ongoing && v.status === "active") return false;
+                if (activeFilter === "inactive") {
+                    const isDead = v.status === "revoked" || v.status === "expired" || (v.status === "used" && (v.remaining_seconds == null || v.remaining_seconds <= 0));
+                    if (!isDead) return false;
+                }
 
                 // Search Box
                 if (searchQuery) {
