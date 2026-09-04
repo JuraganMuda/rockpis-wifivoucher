@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiFi Hotspot Login</title>
+    <title>RTNA WiFi Voucher Login</title>
     <style>
         :root {
             --primary: #4F46E5;
@@ -198,9 +198,13 @@
             <div id="statusMessage" class="message"></div>
 
             <div class="warning-box">
-                <strong>PENTING:</strong><br>
-                Mohon untuk TIDAK menekan tombol "Lupakan Jaringan" atau "Forget Network" pada pengaturan WiFi <b>"RTNA Wifi Voucher"</b> di HP Anda. Voucher terikat pada perangkat Anda secara permanen.
+                <strong>💡 TIPS KONEKSI:</strong><br>
+                • <b>Auto-Connect:</b> Jangan hapus/lupakan jaringan WiFi ini agar HP Anda otomatis terhubung ke internet tanpa perlu memasukkan kode lagi selama masa aktif masih ada.<br>
+                • <b>1 Voucher = 1 HP:</b> Voucher ini khusus untuk perangkat ini dan tidak bisa digunakan bersamaan di perangkat lain.<br><br>
+                <strong>ℹ️ INFORMASI:</strong><br>
+                Voucher berlaku untuk <b>1 perangkat</b>. Biarkan WiFi ini tetap tersimpan di HP Anda agar internet otomatis tersambung kembali kapan saja hingga masa sewa habis.
             </div>
+
         </div>
     </div>
 
@@ -297,7 +301,7 @@
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
-                    statusMessage.textContent = 'Berhasil! Mengalihkan...';
+                    statusMessage.textContent = 'Berhasil! Mohon Tunggu Sebentar, Sampai Sukses Mengalihkan Anda ke Halaman Baru.';
                     statusMessage.className = 'message success';
                     
                     setTimeout(() => {
