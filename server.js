@@ -24,7 +24,7 @@ fastify.register(require("@fastify/static"), {
 function queueNdsAction(action, target) {
   if (!target) return;
   try {
-    const line = `${action.toUpperCase()} ${target.toLowerCase()}\n`;
+    const line = `${action.toUpperCase()} ${target.trim()}\n`;
     fs.appendFileSync("/tmp/nds_action_queue", line);
     fastify.log.info(`[Queue NDS Action] ${line.trim()}`);
   } catch (err) {
@@ -267,10 +267,10 @@ const handleRevoke = async (request, reply) => {
 
     // 2. Eksekusi pemutusan instan ke OpenNDS jika perangkat sudah login (memiliki MAC)
     if (voucher.mac && !voucher.mac.startsWith("ip-")) {
-      queueNdsAction("REVOKE", voucher.mac);
+      queueNdsAction("DEAUTH", voucher.mac);
     }
     if (voucher.ip_address) {
-      queueNdsAction("KICK", voucher.ip_address);
+      queueNdsAction("DEAUTH", voucher.ip_address);
     }
 
     fastify.log.info(
@@ -303,10 +303,10 @@ fastify.post("/api/admin/kick", async (request, reply) => {
   }
 
   if (mac && !mac.startsWith("ip-")) {
-    queueNdsAction("KICK", mac);
+    queueNdsAction("DEAUTH", mac);
   }
   if (ip) {
-    queueNdsAction("KICK", ip);
+    queueNdsAction("DEAUTH", ip);
   }
 
   return reply.send({
@@ -467,9 +467,9 @@ fastify.post("/api/login", async (request, reply) => {
       [clientmac.toLowerCase(), ip, voucher.duration_minutes, voucher.id]
     );
 
-    // Kirim sinyal Trust instan ke OpenNDS
+    // Kirim sinyal Auth instan ke OpenNDS
     if (!clientmac.startsWith("ip-")) {
-      queueNdsAction("TRUST", clientmac.toLowerCase());
+      queueNdsAction("AUTH", `${clientmac.toLowerCase()} ${voucher.duration_minutes}`);
     }
 
     // Buat URL Redirect ke OpenNDS yang bersih dengan landing page (redir)
@@ -517,6 +517,16 @@ fastify.post("/api/check_mac", async (request, reply) => {
         "UPDATE vouchers SET ip_address = ?, last_seen = NOW() WHERE id = ?",
         [ip, rows[0].id]
       );
+      // Sinkronkan auth ke OpenNDS jika belum aktif
+      const [diffRows] = await pool.execute(
+        "SELECT TIMESTAMPDIFF(MINUTE, NOW(), expires_at) as rem FROM vouchers WHERE id = ?",
+        [rows[0].id]
+      );
+      const remMin = (diffRows[0] && diffRows[0].rem > 0) ? diffRows[0].rem : 60;
+      if (!clientmac.startsWith("ip-")) {
+        queueNdsAction("AUTH", `${clientmac.toLowerCase()} ${remMin}`);
+      }
+
       const baseUrl = authaction ? authaction.split("?")[0] : "http://10.0.0.1:2050/opennds_auth/";
       const redirectUrl = `${baseUrl}?tok=${tok || ""}&clientip=${ip}`;
       return reply.send({ active: true, redirect: redirectUrl });

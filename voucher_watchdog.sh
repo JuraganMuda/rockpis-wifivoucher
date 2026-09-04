@@ -4,6 +4,18 @@
 # Menjamin kelancaran internet & auto-login pelanggan
 # ==========================================================
 
+nds_run() {
+    local cmd="$1"
+    for i in 1 2 3 4 5; do
+        out=$(eval "$cmd" 2>&1)
+        if echo "$out" | grep -qi "busy"; then
+            sleep 0.2
+        else
+            break
+        fi
+    done
+}
+
 heal() {
     # 1. Pastikan end0 memiliki IP statis 192.168.0.151 dan route default
     if ! ip addr show dev end0 2>/dev/null | grep -q "192.168.0.151"; then
@@ -49,33 +61,33 @@ heal() {
         fi
     done
 
-    # 6. Auto-Trust MAC Pelanggan (Agar tidak perlu ketik voucher berulang kali!)
-    # Ambil list MAC yang saat ini sudah trusted di OpenNDS
+    # 6. Pembersihan Trusted MAC:
+    # JANGAN PERNAH meninggalkan MAC voucher pelanggan dalam daftar Trusted!
+    # Karena openNDS tidak dapat melakukan deauth pada Trusted MAC dan akan merusak alur captive portal.
     TRUSTED_NOW=$(ndsctl status 2>/dev/null | sed -n '/Trusted MAC addresses:/,/====/p' | grep -E '([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}' | tr 'A-Z' 'a-z')
-
-    # Ambil list MAC yang masih punya voucher aktif dari MariaDB
-    ACTIVE_MACS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT DISTINCT LOWER(mac) FROM radius_db.vouchers WHERE status='used' AND expires_at > NOW() AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
-
-    # Otomatis Trust setiap pelanggan yang vouchernya masih aktif
-    for m in $ACTIVE_MACS; do
-        if ! echo "$TRUSTED_NOW" | grep -q "$m"; then
-            ndsctl trust "$m" >/dev/null 2>&1
-        fi
+    for m in $TRUSTED_NOW; do
+        nds_run "ndsctl untrust $m"
     done
 
-    # 7. CRITICAL FIX: Otomatis Untrust & Deauth SEMUA MAC yang TIDAK LAGI AKTIF
-    # Menangani kasus voucher kedaluwarsa, dicabut, atau dihapus oleh admin!
-    for m in $TRUSTED_NOW; do
-        if ! echo "$ACTIVE_MACS" | grep -q "$m"; then
-            ndsctl untrust "$m" >/dev/null 2>&1
-            ndsctl deauth "$m" >/dev/null 2>&1
-        fi
+    # 7. Otomatis Deauth & Untrust SEMUA voucher yang telah kedaluwarsa atau dicabut
+    EXPIRED_MACS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT DISTINCT LOWER(mac) FROM radius_db.vouchers WHERE (status='expired' OR status='revoked' OR (status='used' AND expires_at <= NOW())) AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
+    for m in $EXPIRED_MACS; do
+        nds_run "ndsctl deauth $m"
+        nds_run "ndsctl untrust $m"
     done
 
     # Update status voucher kedaluwarsa di database jika durasinya habis
     docker exec mariadb_nds mysql -u radius -pradius_password -e "UPDATE radius_db.vouchers SET status='expired' WHERE status='used' AND expires_at <= NOW();" >/dev/null 2>&1
 
-    # 8. Dump Status Live OpenNDS untuk dibaca oleh Live Monitoring Dashboard API
+    # 8. Sinkronisasi Voucher Aktif ke OpenNDS (Menggunakan 'ndsctl auth', BUKAN 'trust')
+    ACTIVE_VOUCHERS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT DISTINCT LOWER(mac), TIMESTAMPDIFF(MINUTE, NOW(), expires_at) FROM radius_db.vouchers WHERE status='used' AND expires_at > NOW() AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
+    while read -r mac rem; do
+        if [ -n "$mac" ] && [ -n "$rem" ] && [ "$rem" -gt 0 ]; then
+            nds_run "ndsctl auth $mac $rem"
+        fi
+    done <<< "$ACTIVE_VOUCHERS"
+
+    # 9. Dump Status Live OpenNDS untuk dibaca oleh Live Monitoring Dashboard API
     if command -v ndsctl >/dev/null 2>&1; then
         ndsctl json 2>/dev/null > /tmp/nds_live_status.json.tmp && mv /tmp/nds_live_status.json.tmp /tmp/nds_live_status.json 2>/dev/null || true
     fi
@@ -91,16 +103,18 @@ process_queue() {
         while IFS= read -r line || [ -n "$line" ]; do
             cmd=$(echo "$line" | awk '{print $1}')
             target=$(echo "$line" | awk '{print $2}' | tr 'A-Z' 'a-z')
+            extra=$(echo "$line" | awk '{print $3}')
             if [ -n "$target" ]; then
-                if [ "$cmd" = "REVOKE" ]; then
-                    ndsctl untrust "$target" >/dev/null 2>&1 || true
-                    ndsctl deauth "$target" >/dev/null 2>&1 || true
-                elif [ "$cmd" = "KICK" ]; then
-                    ndsctl deauth "$target" >/dev/null 2>&1 || true
+                if [ "$cmd" = "REVOKE" ] || [ "$cmd" = "KICK" ] || [ "$cmd" = "DEAUTH" ]; then
+                    nds_run "ndsctl deauth $target"
+                    nds_run "ndsctl untrust $target"
+                elif [ "$cmd" = "AUTH" ]; then
+                    duration=${extra:-1440}
+                    nds_run "ndsctl auth $target $duration"
                 elif [ "$cmd" = "UNTRUST" ]; then
-                    ndsctl untrust "$target" >/dev/null 2>&1 || true
+                    nds_run "ndsctl untrust $target"
                 elif [ "$cmd" = "TRUST" ]; then
-                    ndsctl trust "$target" >/dev/null 2>&1 || true
+                    nds_run "ndsctl trust $target"
                 fi
             fi
         done < "$ACTION_QUEUE"

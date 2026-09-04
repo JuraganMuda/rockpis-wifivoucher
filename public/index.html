@@ -211,6 +211,27 @@
         let clientmac = urlParams.get('clientmac') || (fullSearch.match(/[?&]clientmac=([^&]+)/) || [])[1] || '';
         let tok = urlParams.get('tok') || (fullSearch.match(/[?&]tok=([^&]+)/) || [])[1] || '';
         let authaction = urlParams.get('authaction') || (fullSearch.match(/[?&]authaction=([^&]+)/) || [])[1] || '';
+
+        // Ekstraksi parameter jika openNDS menggunakan parameter ?fas=... (FAS Mode)
+        const fasParam = urlParams.get('fas');
+        if (fasParam) {
+            try {
+                const decoded = atob(fasParam);
+                const pairs = decoded.split(',');
+                for (const pair of pairs) {
+                    const [k, v] = pair.trim().split('=');
+                    if (k === 'clientip' && !clientip) clientip = v;
+                    if (k === 'clientmac' && !clientmac) clientmac = v;
+                    if (k === 'tok' && !tok) tok = v;
+                    if (k === 'gatewayaddress' && !authaction) {
+                        authaction = `http://${v}/opennds_auth/`;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to decode fas param", e);
+            }
+        }
+
         if (authaction && authaction.includes('?')) {
             authaction = authaction.split('?')[0];
         }
