@@ -197,8 +197,8 @@ fastify.post("/api/generate", async (request, reply) => {
     duration_minutes = 1440;
   }
 
-  // 2. Ambil nama pelanggan dari AppSheet (Assignee / Title / customer_name)
-  const custName = (customer_name || Assignee || Title || "").trim() || null;
+  // 2. Ambil nama pelanggan dari AppSheet: Title di AppSheet adalah Nama Pelanggan
+  const custName = (customer_name || Title || "").trim() || null;
 
   // 3. Ambil kode voucher (dari providedCode jika dibuat AppSheet, atau generate baru)
   const code = (providedCode || generateVoucherCode()).toUpperCase().trim();
