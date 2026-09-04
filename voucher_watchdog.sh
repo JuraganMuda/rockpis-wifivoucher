@@ -74,20 +74,16 @@ heal() {
     for m in $EXPIRED_MACS; do
         nds_run "ndsctl deauth $m"
         nds_run "ndsctl untrust $m"
+        if command -v conntrack >/dev/null 2>&1; then
+            conntrack -D -s "$m" >/dev/null 2>&1 || true
+            conntrack -D -d "$m" >/dev/null 2>&1 || true
+        fi
     done
 
     # Update status voucher kedaluwarsa di database jika durasinya habis
     docker exec mariadb_nds mysql -u radius -pradius_password -e "UPDATE radius_db.vouchers SET status='expired' WHERE status='used' AND expires_at <= NOW();" >/dev/null 2>&1
 
-    # 8. Sinkronisasi Voucher Aktif ke OpenNDS (Menggunakan 'ndsctl auth', BUKAN 'trust')
-    ACTIVE_VOUCHERS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT DISTINCT LOWER(mac), TIMESTAMPDIFF(MINUTE, NOW(), expires_at) FROM radius_db.vouchers WHERE status='used' AND expires_at > NOW() AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
-    while read -r mac rem; do
-        if [ -n "$mac" ] && [ -n "$rem" ] && [ "$rem" -gt 0 ]; then
-            nds_run "ndsctl auth $mac $rem"
-        fi
-    done <<< "$ACTIVE_VOUCHERS"
-
-    # 9. Dump Status Live OpenNDS untuk dibaca oleh Live Monitoring Dashboard API
+    # 8. Dump Status Live OpenNDS untuk dibaca oleh Live Monitoring Dashboard API
     if command -v ndsctl >/dev/null 2>&1; then
         ndsctl json 2>/dev/null > /tmp/nds_live_status.json.tmp && mv /tmp/nds_live_status.json.tmp /tmp/nds_live_status.json 2>/dev/null || true
     fi
@@ -108,6 +104,10 @@ process_queue() {
                 if [ "$cmd" = "REVOKE" ] || [ "$cmd" = "KICK" ] || [ "$cmd" = "DEAUTH" ]; then
                     nds_run "ndsctl deauth $target"
                     nds_run "ndsctl untrust $target"
+                    if command -v conntrack >/dev/null 2>&1; then
+                        conntrack -D -s "$target" >/dev/null 2>&1 || true
+                        conntrack -D -d "$target" >/dev/null 2>&1 || true
+                    fi
                 elif [ "$cmd" = "AUTH" ]; then
                     duration=${extra:-1440}
                     nds_run "ndsctl auth $target $duration"

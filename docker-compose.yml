@@ -34,6 +34,8 @@ services:
       - DB_NAME=radius_db
     volumes:
       - /tmp:/tmp
+      - ./server.js:/app/server.js
+      - ./public:/app/public
     depends_on:
       - db
     deploy:

@@ -297,22 +297,37 @@ fastify.post("/api/admin/kick", async (request, reply) => {
     return reply.code(401).send({ error: "Unauthorized" });
   }
 
-  const { mac, ip } = request.body || {};
-  if (!mac && !ip) {
-    return reply.code(400).send({ error: "MAC atau IP diperlukan" });
+  const { mac, ip, id } = request.body || {};
+  if (!mac && !ip && !id) {
+    return reply.code(400).send({ error: "MAC, IP, atau ID diperlukan" });
   }
 
-  if (mac && !mac.startsWith("ip-")) {
-    queueNdsAction("DEAUTH", mac);
-  }
-  if (ip) {
-    queueNdsAction("DEAUTH", ip);
-  }
+  try {
+    // 1. Lepaskan ikatan MAC pada voucher agar auto-login tidak langsung menyambungkan ulang otomatis
+    if (id) {
+      await pool.execute("UPDATE vouchers SET mac = NULL WHERE id = ?", [id]);
+    } else if (mac) {
+      await pool.execute("UPDATE vouchers SET mac = NULL WHERE mac = ?", [mac.toLowerCase().trim()]);
+    } else if (ip) {
+      await pool.execute("UPDATE vouchers SET mac = NULL WHERE ip_address = ?", [ip.trim()]);
+    }
 
-  return reply.send({
-    success: true,
-    message: `Koneksi perangkat ${mac || ip} berhasil diputus.`,
-  });
+    // 2. Putus koneksi instan di OpenNDS dan bersihkan conntrack
+    if (mac && !mac.startsWith("ip-")) {
+      queueNdsAction("DEAUTH", mac);
+    }
+    if (ip) {
+      queueNdsAction("DEAUTH", ip);
+    }
+
+    return reply.send({
+      success: true,
+      message: `Koneksi perangkat ${mac || ip} berhasil diputus. Pelanggan harus memasukkan kode voucher untuk login kembali.`,
+    });
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.code(500).send({ error: "Database error" });
+  }
 });
 
 // GET /api/admin/sessions - Mengambil status pemantauan seluruh user & sesi aktif secara real-time
@@ -447,44 +462,104 @@ fastify.post("/api/login", async (request, reply) => {
   }
 
   try {
+    const cleanCode = code.toUpperCase().trim();
+    const cleanMac = clientmac.toLowerCase().trim();
+
     const [rows] = await pool.execute(
-      'SELECT * FROM vouchers WHERE code = ? AND status = "active"',
-      [code.toUpperCase().trim()]
+      'SELECT *, TIMESTAMPDIFF(SECOND, NOW(), expires_at) as rem_sec FROM vouchers WHERE code = ?',
+      [cleanCode]
     );
 
     if (rows.length === 0) {
       return reply.code(401).send({
         success: false,
-        message: "Voucher tidak valid, sudah dipakai, atau telah dicabut",
+        message: "Kode voucher tidak ditemukan.",
       });
     }
 
     const voucher = rows[0];
 
-    // Aktifkan voucher: Set MAC, IP, ubah status, catat waktu mulai & expired
-    await pool.execute(
-      'UPDATE vouchers SET status = "used", mac = ?, ip_address = ?, last_seen = NOW(), expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?',
-      [clientmac.toLowerCase(), ip, voucher.duration_minutes, voucher.id]
-    );
-
-    // Kirim sinyal Auth instan ke OpenNDS
-    if (!clientmac.startsWith("ip-")) {
-      queueNdsAction("AUTH", `${clientmac.toLowerCase()} ${voucher.duration_minutes}`);
+    if (voucher.status === "revoked") {
+      return reply.code(403).send({
+        success: false,
+        message: "Voucher ini telah dicabut / diblokir oleh admin.",
+      });
     }
 
-    // Buat URL Redirect ke OpenNDS yang bersih dengan landing page (redir)
-    let redirectUrl = "";
-    if (authaction) {
-      const baseUrl = authaction.split("?")[0];
-      redirectUrl = `${baseUrl}?tok=${tok || ""}&redir=http://google.com`;
-    } else {
-      redirectUrl = `http://10.0.0.1:2050/opennds_auth/?tok=${tok || ""}&redir=http://google.com`;
+    if (voucher.status === "expired" || (voucher.status === "used" && voucher.rem_sec <= 0)) {
+      await pool.execute("UPDATE vouchers SET status = 'expired' WHERE id = ?", [voucher.id]);
+      return reply.code(403).send({
+        success: false,
+        message: "Masa aktif voucher ini telah habis (kedaluwarsa).",
+      });
     }
 
-    return reply.send({
-      success: true,
-      message: "Login berhasil",
-      redirect: redirectUrl,
+    // Kasus 1: Voucher baru pertama kali dipakai
+    if (voucher.status === "active") {
+      await pool.execute(
+        'UPDATE vouchers SET status = "used", mac = ?, ip_address = ?, last_seen = NOW(), expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?',
+        [cleanMac, ip, voucher.duration_minutes, voucher.id]
+      );
+
+      if (!cleanMac.startsWith("ip-")) {
+        queueNdsAction("AUTH", `${cleanMac} ${voucher.duration_minutes}`);
+      }
+
+      let redirectUrl = "";
+      if (authaction) {
+        const baseUrl = authaction.split("?")[0];
+        redirectUrl = `${baseUrl}?tok=${tok || ""}&redir=http://google.com`;
+      } else {
+        redirectUrl = `http://10.0.0.1:2050/opennds_auth/?tok=${tok || ""}&redir=http://google.com`;
+      }
+
+      return reply.send({
+        success: true,
+        message: "Login berhasil! Selamat menikmati internet.",
+        redirect: redirectUrl,
+      });
+    }
+
+    // Kasus 2: Voucher sedang digunakan (atau habis di-kick admin) dan masih punya sisa waktu
+    if (voucher.status === "used" && voucher.rem_sec > 0) {
+      // Keamanan: Cek apakah voucher sedang aktif di perangkat lain yang belum di-kick
+      if (voucher.mac && voucher.mac !== cleanMac) {
+        return reply.code(403).send({
+          success: false,
+          message: "Voucher ini sedang aktif digunakan di perangkat lain.",
+        });
+      }
+
+      const remMinutes = Math.max(1, Math.ceil(voucher.rem_sec / 60));
+
+      // Pasang kembali MAC perangkat (re-bind) & perbarui IP
+      await pool.execute(
+        'UPDATE vouchers SET mac = ?, ip_address = ?, last_seen = NOW() WHERE id = ?',
+        [cleanMac, ip, voucher.id]
+      );
+
+      if (!cleanMac.startsWith("ip-")) {
+        queueNdsAction("AUTH", `${cleanMac} ${remMinutes}`);
+      }
+
+      let redirectUrl = "";
+      if (authaction) {
+        const baseUrl = authaction.split("?")[0];
+        redirectUrl = `${baseUrl}?tok=${tok || ""}&redir=http://google.com`;
+      } else {
+        redirectUrl = `http://10.0.0.1:2050/opennds_auth/?tok=${tok || ""}&redir=http://google.com`;
+      }
+
+      return reply.send({
+        success: true,
+        message: "Sesi berhasil dipulihkan! Sisa waktu Anda dilanjutkan.",
+        redirect: redirectUrl,
+      });
+    }
+
+    return reply.code(400).send({
+      success: false,
+      message: "Status voucher tidak valid.",
     });
   } catch (err) {
     fastify.log.error(err);
