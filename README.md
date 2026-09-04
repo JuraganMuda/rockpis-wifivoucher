@@ -24,14 +24,15 @@ Panduan arsitektur komprehensif, manual konfigurasi OS, skema database, dan buku
 ```text
 rockpis-wifivoucher/
 ├── public/
-│   └── index.html               # Splash page captive portal (desain modern & responsive)
+│   ├── index.html               # Splash page captive portal (desain modern & responsive)
+│   └── admin.html               # Live Active User Monitor & Control Center (Mobile-First)
 ├── .gitignore                   # Aturan pengabaian file sementara & rahasia
 ├── docker-compose.yml           # Orkestrasi kontainer (node_api, mariadb_nds, cloudflared)
 ├── Dockerfile                   # Spesifikasi container Node.js 20 Alpine Fastify
-├── init.sql                     # Skema inisialisasi tabel database vouchers
+├── init.sql                     # Skema inisialisasi tabel database vouchers (mendukung customer_name & IP)
 ├── package.json                 # Dependensi Node.js (Fastify, Fastify-Static, MySQL2)
-├── server.js                    # Server aplikasi Fastify: Webhook API & autentikasi OpenNDS
-├── voucher_watchdog.sh          # Daemon pengawas 24/7 (PLN-Proof, NAT, sync trusted MAC)
+├── server.js                    # Server Fastify: Webhook API, Live Monitor API, Revoke, dan OpenNDS
+├── voucher_watchdog.sh          # Daemon pengawas 24/7 (PLN-Proof, NAT, instant queue, sync trusted MAC)
 ├── build_pdf.js                 # Generator cetak PDF dokumentasi A4
 ├── MASTER_SYSTEM_DOCUMENTATION.md # Buku panduan teknis & arsitektur sistem
 └── README.md                    # Ringkasan proyek GitHub

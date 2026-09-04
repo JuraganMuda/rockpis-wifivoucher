@@ -269,7 +269,7 @@ sequenceDiagram
     Admin->>Admin: Kode otomatis masuk ke Google Sheets admin
 ```
 
-### Format Standar Permintaan Webhook AppSheet:
+### A. Format Standar Pembuatan Voucher (POST /api/generate)
 - **URL:** `https://api.rtnawifi.my.id/api/generate`
 - **Method:** `POST`
 - **Headers:** `x-api-key: rahasia-appsheet-123`
@@ -277,10 +277,92 @@ sequenceDiagram
   ```json
   {
     "Status": "24 Jam/1 Hari",
-    "Assignee": ""
+    "Assignee": "VIKSA"
   }
   ```
 - **Karakter Kode Voucher:** Dibuat menggunakan alfabet khusus (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`) tanpa karakter membingungkan seperti angka `0`, huruf `O`, angka `1`, dan huruf `I`.
+- **Pencatatan Nama Pelanggan:** Nilai `Assignee` atau `Title` otomatis disimpan ke dalam kolom `customer_name` di database agar tampil di Live Monitor.
+
+---
+
+### B. Alur Penghapusan & Pemutusan Instan (Webhook POST /api/revoke)
+
+Untuk mengatasi kelemahan di mana voucher yang dihapus di AppSheet penggunanya masih tetap bisa internetan, sistem kini dilengkapi dengan endpoint **Instant Revoke & Deauth**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Admin HP AppSheet
+    participant CF as Cloudflare Edge (api.rtnawifi.my.id)
+    participant Fastify as Node.js API (Port 3000)
+    participant DB as MariaDB (radius_db)
+    participant NDS as OpenNDS (Linux Host)
+    actor Pelanggan as HP Pelanggan
+
+    Admin->>Admin: Klik Ikon Tong Sampah (Hapus Baris)
+    Admin->>CF: Webhook Otomatis POST /api/revoke (code: 5MASTH)
+    CF->>Fastify: Teruskan ke API Port 3000
+    Fastify->>DB: UPDATE vouchers SET status='revoked', expires_at=NOW()
+    Fastify->>NDS: Tulis Antrean: REVOKE 84:2a:fd:11:22:33
+    NDS->>NDS: Eksekusi ndsctl untrust dan ndsctl deauth (< 1 detik)
+    NDS--xPelanggan: KONEKSI INTERNET LANGSUNG PUTUS SEKETIKA!
+    Fastify-->>Admin: Respon JSON: Voucher Berhasil Dicabut & User Diputus
+```
+
+#### Panduan Konfigurasi Webhook Hapus di Google AppSheet:
+1. Buka aplikasi Anda di [Google AppSheet Editor](https://www.appsheet.com/).
+2. Masuk ke menu **Core** / **Automation** &rarr; **Bots**.
+3. Buat Bot baru: **"Voucher Deleted Revoke"**.
+4. Atur **Event**:
+   - **Event Type:** `Data Change`
+   - **Data Change Type:** Pilih **`Deletes only`**
+   - **Table:** Pilih tabel voucher Anda (misal: `Table 1`).
+5. Atur **Step (Run a task)**:
+   - **Task type:** `Call a webhook`
+   - **Url:** `https://api.rtnawifi.my.id/api/revoke`
+   - **HTTP Verb:** `POST`
+   - **HTTP Headers:**
+     - Key: `x-api-key`, Value: `rahasia-appsheet-123`
+     - Key: `Content-Type`, Value: `application/json`
+   - **Body JSON Template:**
+     ```json
+     {
+       "code": "<<[Assignee]>>"
+     }
+     ```
+     *(Ganti `[Assignee]` dengan nama kolom yang menyimpan kode voucher di lembar spreadsheet Anda jika berbeda).*
+6. Simpan (**Save**). Sekarang, setiap kali Anda menghapus voucher dari AppSheet, pengguna terkait akan langsung terputus dari internet dalam waktu kurang dari 1 detik!
+
+---
+
+### C. Pusat Kendali & Live Monitoring Pengguna Aktif (Control Center)
+
+Bagi pemilik jaringan, mengamati siapa saja yang sedang terhubung ke Wi-Fi saat ini sangat penting. Tersedia antarmuka **Live Monitoring Dashboard** berbasis web yang sangat ringan (< 150KB), hemat memori, responsif di ponsel (*mobile-first*), dan dapat diakses dari mana saja tanpa VPN:
+
+- **Alamat URL:** `https://api.rtnawifi.my.id/admin` (atau `http://10.0.0.1:3000/admin` jika terhubung ke hotspot lokal)
+- **Keamanan:** Dilindungi **PIN Admin** (Default: `123456`, dapat diubah via environment `ADMIN_PIN`).
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ RTNA WI-FI CONTROL & LIVE MONITOR 🟢 LIVE (Auto 5s)                   │
+├──────────────┬──────────────┬──────────────┬───────────────────────────┤
+│ ONLINE: 3    │ DIGUNAKAN: 5 │ SIAP PAKAI: 8│ HABIS/DICABUT: 12         │
+├──────────────┴──────────────┴──────────────┴───────────────────────────┤
+│ [🔍 Cari Nama/Kode/IP/MAC...]  [Semua] [🟢 Online] [⏳ Sesi Aktif]     │
+├──────────────┬──────────────┬──────────────┬──────────────┬────────────┤
+│ PELANGGAN    │ KODE VOUCHER │ IP & MAC     │ SISA WAKTU   │ AKSI CEPAT │
+├──────────────┼──────────────┼──────────────┼──────────────┼────────────┤
+│ VIKSA        │ 5MASTH       │ 10.0.0.45    │ 6h 18j 22m   │ [🛑 Kick]  │
+│ 🟢 Online    │              │ 84:2a:fd:... │ (Countdown)  │ [🗑️ Hapus] │
+└──────────────┴──────────────┴──────────────┴──────────────┴────────────┘
+```
+
+#### Fitur Utama Live Monitoring Dashboard:
+1. **🟢 Real-Time Online Detection:** Mendeteksi perangkat yang benar-benar aktif memancarkan paket data di jaringan dengan indikator lampu hijau berkedip.
+2. **⏳ Dynamic Countdown Timer:** Jam dan menit sisa sewa pelanggan berjalan mundur secara *real-time* detik demi detik langsung di layar HP admin.
+3. **🛑 Tombol Putus Sesi (Kick):** Memutus koneksi perangkat pelanggan seketika lewat `ndsctl deauth` tanpa menghapus vouchernya (berguna jika koneksi pelanggan sedang macet atau ingin dipaksa otentikasi ulang).
+4. **🗑️ Tombol Hapus & Blokir:** Mencabut voucher dari sistem dan langsung mengunci gerbang OpenNDS seketika (< 1 detik).
+5. **➕ Buat Voucher Cepat:** Fitur darurat untuk meng-generate voucher langsung dari browser jika admin sedang tidak membuka AppSheet.
 
 ---
 

@@ -63,21 +63,63 @@ heal() {
         fi
     done
 
-    # Otomatis Untrust pelanggan yang durasinya sudah habis (kedaluwarsa)
-    EXPIRED_MACS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT DISTINCT LOWER(mac) FROM radius_db.vouchers WHERE status='used' AND expires_at <= NOW() AND mac IS NOT NULL;" 2>/dev/null)
-    for m in $EXPIRED_MACS; do
+    # 7. CRITICAL FIX: Otomatis Untrust & Deauth SEMUA MAC yang TIDAK LAGI AKTIF
+    # Menangani kasus voucher kedaluwarsa, dicabut, atau dihapus oleh admin!
+    for m in $TRUSTED_NOW; do
         if ! echo "$ACTIVE_MACS" | grep -q "$m"; then
             ndsctl untrust "$m" >/dev/null 2>&1
+            ndsctl deauth "$m" >/dev/null 2>&1
         fi
     done
-    # Update status voucher kedaluwarsa di database
+
+    # Update status voucher kedaluwarsa di database jika durasinya habis
     docker exec mariadb_nds mysql -u radius -pradius_password -e "UPDATE radius_db.vouchers SET status='expired' WHERE status='used' AND expires_at <= NOW();" >/dev/null 2>&1
+
+    # 8. Dump Status Live OpenNDS untuk dibaca oleh Live Monitoring Dashboard API
+    if command -v ndsctl >/dev/null 2>&1; then
+        ndsctl json 2>/dev/null > /tmp/nds_live_status.json.tmp && mv /tmp/nds_live_status.json.tmp /tmp/nds_live_status.json 2>/dev/null || true
+    fi
+}
+
+# Saluran Perintah Cepat Antrean Aksi (< 1 detik)
+ACTION_QUEUE="/tmp/nds_action_queue"
+touch "$ACTION_QUEUE" 2>/dev/null || true
+chmod 666 "$ACTION_QUEUE" 2>/dev/null || true
+
+process_queue() {
+    if [ -s "$ACTION_QUEUE" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+            cmd=$(echo "$line" | awk '{print $1}')
+            target=$(echo "$line" | awk '{print $2}' | tr 'A-Z' 'a-z')
+            if [ -n "$target" ]; then
+                if [ "$cmd" = "REVOKE" ]; then
+                    ndsctl untrust "$target" >/dev/null 2>&1 || true
+                    ndsctl deauth "$target" >/dev/null 2>&1 || true
+                elif [ "$cmd" = "KICK" ]; then
+                    ndsctl deauth "$target" >/dev/null 2>&1 || true
+                elif [ "$cmd" = "UNTRUST" ]; then
+                    ndsctl untrust "$target" >/dev/null 2>&1 || true
+                elif [ "$cmd" = "TRUST" ]; then
+                    ndsctl trust "$target" >/dev/null 2>&1 || true
+                fi
+            fi
+        done < "$ACTION_QUEUE"
+        > "$ACTION_QUEUE"
+    fi
 }
 
 # Tunggu sejenak saat booting awal
 sleep 3
 heal
+
+# Loop pengawasan: Cek antrean aksi instan setiap 1 detik, audit penuh berkala setiap 15 detik
+counter=0
 while true; do
-    sleep 15
-    heal
+    process_queue
+    sleep 1
+    counter=$((counter + 1))
+    if [ $counter -ge 15 ]; then
+        heal
+        counter=0
+    fi
 done

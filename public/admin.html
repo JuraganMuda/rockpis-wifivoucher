@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RTNA WiFi - Live Active User Monitor & Control</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-base: #0B0F19;
+            --card-bg: rgba(18, 24, 39, 0.75);
+            --card-hover: rgba(30, 41, 59, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            
+            --primary: #6366F1;
+            --primary-hover: #4F46E5;
+            --primary-light: rgba(99, 102, 241, 0.15);
+            
+            --success: #10B981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --warning: #F59E0B;
+            --warning-glow: rgba(245, 158, 11, 0.2);
+            --danger: #EF4444;
+            --danger-hover: #DC2626;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12), transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.5), transparent 70%);
+            background-attachment: fixed;
+            padding-bottom: 3rem;
+        }
+
+        /* Glass Container */
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.25rem 1rem;
+        }
+
+        /* Header Navbar */
+        header.app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .brand-text h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: livePulse 1.8s infinite;
+        }
+
+        @keyframes livePulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 12px var(--success); }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.15rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366F1, #4F46E5);
+            color: white;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #4F46E5, #4338CA);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-sm {
+            padding: 0.45rem 0.8rem;
+            font-size: 0.775rem;
+            border-radius: 8px;
+        }
+
+        .btn-danger-soft {
+            background: rgba(239, 68, 68, 0.12);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+        .btn-danger-soft:hover {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 4px 12px var(--danger-glow);
+        }
+
+        .btn-warning-soft {
+            background: rgba(245, 158, 11, 0.12);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+        .btn-warning-soft:hover {
+            background: var(--warning);
+            color: black;
+            font-weight: 700;
+        }
+
+        /* 4 Key Statistics Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 1.25rem 1.35rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: transparent;
+        }
+        .stat-card.card-online::before { background: linear-gradient(90deg, #10B981, #059669); }
+        .stat-card.card-active::before { background: linear-gradient(90deg, #6366F1, #8B5CF6); }
+        .stat-card.card-unused::before { background: linear-gradient(90deg, #3B82F6, #06B6D4); }
+        .stat-card.card-expired::before { background: linear-gradient(90deg, #64748B, #475569); }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        .stat-card.card-online .stat-icon { background: rgba(16, 185, 129, 0.15); color: #10B981; }
+        .stat-card.card-active .stat-icon { background: rgba(99, 102, 241, 0.15); color: #818CF8; }
+        .stat-card.card-unused .stat-icon { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+        .stat-card.card-expired .stat-icon { background: rgba(100, 116, 139, 0.15); color: #94A3B8; }
+
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--text-primary);
+        }
+
+        .stat-meta {
+            margin-top: 0.45rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Filter & Controls Bar */
+        .filter-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: rgba(11, 15, 25, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.65rem 1rem 0.65rem 2.5rem;
+            color: white;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            font-size: 0.9rem;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            max-width: 100%;
+            padding-bottom: 2px;
+        }
+
+        .pill-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.45rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.775rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .pill-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+        .pill-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Table & Card List Section */
+        .content-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-header-inner {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header-inner h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Desktop Table View */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table.user-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        table.user-table th {
+            background: rgba(11, 15, 25, 0.6);
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.725rem;
+            letter-spacing: 0.05em;
+        }
+
+        table.user-table td {
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+        }
+
+        table.user-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Badges & Monospace Tags */
+        .voucher-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #818CF8;
+            background: rgba(99, 102, 241, 0.12);
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            display: inline-block;
+            letter-spacing: 1px;
+        }
+
+        .customer-name {
+            font-weight: 700;
+            color: white;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .device-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.725rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .status-badge.online {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-badge.standby {
+            background: rgba(245, 158, 11, 0.12);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+        .status-badge.unused {
+            background: rgba(59, 130, 246, 0.12);
+            color: #60A5FA;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        .status-badge.expired {
+            background: rgba(100, 116, 139, 0.15);
+            color: #94A3B8;
+            border: 1px solid rgba(100, 116, 139, 0.25);
+        }
+        .status-badge.revoked {
+            background: rgba(239, 68, 68, 0.15);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .countdown-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+        .countdown-text.urgent {
+            color: #F87171;
+            animation: textBlink 1.5s infinite;
+        }
+
+        @keyframes textBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Action Buttons Container */
+        .actions-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Mobile Card View (shown on screens < 768px) */
+        .mobile-card-list {
+            display: none;
+            padding: 1rem;
+            gap: 0.85rem;
+            flex-direction: column;
+        }
+
+        .user-mobile-card {
+            background: rgba(11, 15, 25, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.15rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .user-mobile-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(11, 15, 25, 0.8);
+        }
+
+        .umc-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .umc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.775rem;
+        }
+
+        .umc-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        .umc-actions .btn {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .table-responsive { display: none; }
+            .mobile-card-list { display: flex; }
+            .stat-value { font-size: 1.65rem; }
+            .filter-section { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+        }
+
+        /* PIN Lock Screen Modal */
+        #pinModal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(11, 15, 25, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .pin-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8);
+        }
+
+        .pin-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 1.25rem;
+            color: #818CF8;
+        }
+
+        .pin-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.4rem;
+            letter-spacing: 8px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(11, 15, 25, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 1.25rem;
+            transition: all 0.2s;
+        }
+        .pin-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+        }
+
+        /* Generic Confirmation Modal */
+        .app-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 9000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .app-modal.active { display: flex; }
+
+        .modal-body-card {
+            background: #151D2F;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+            animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Toast Notifications */
+        #toastContainer {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: #1E293B;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 0.85rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+            max-width: 360px;
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+
+        @keyframes toastIn {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PIN Screen Modal (Proteksi Akses Admin) -->
+    <div id="pinModal">
+        <div class="pin-card">
+            <div class="pin-icon">🔒</div>
+            <h2 style="font-family: 'Outfit', sans-serif; margin-bottom: 0.4rem;">Admin Control</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+                Masukkan PIN Admin Rock Pi S untuk memantau & mengontrol pengguna voucher.
+            </p>
+            <form id="pinForm">
+                <input type="password" id="pinInput" class="pin-input" placeholder="••••••" maxlength="12" autofocus required>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
+                    Buka Dashboard
+                </button>
+            </form>
+            <div id="pinError" style="color: #F87171; font-size: 0.8rem; margin-top: 1rem; min-height: 18px;"></div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Kick / Revoke -->
+    <div id="actionModal" class="app-modal">
+        <div class="modal-body-card">
+            <h3 id="actionModalTitle" style="font-family: 'Outfit', sans-serif; margin-bottom: 0.75rem; font-size: 1.2rem;">Konfirmasi Tindakan</h3>
+            <p id="actionModalDesc" style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                Apakah Anda yakin ingin melakukan tindakan ini?
+            </p>
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button class="btn btn-ghost" onclick="closeActionModal()">Batal</button>
+                <button id="actionModalConfirmBtn" class="btn btn-primary">Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah Voucher Baru -->
+    <div id="createModal" class="app-modal">
+        <div class="modal-body-card">
+            <h3 style="font-family: 'Outfit', sans-serif; margin-bottom: 0.5rem; font-size: 1.25rem;">Buat Voucher Baru</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+                Generate kode voucher instan langsung ke database Rock Pi S.
+            </p>
+            <form id="createVoucherForm">
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NAMA PELANGGAN (OPSIONAL)</label>
+                    <input type="text" id="newCustName" placeholder="Contoh: Pak Budi / Viksa" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                </div>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">PAKET DURASI</label>
+                    <select id="newDuration" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                        <option value="1440">24 Jam (1 Hari)</option>
+                        <option value="4320">3 Hari</option>
+                        <option value="10080" selected>7 Hari (1 Minggu)</option>
+                        <option value="43200">30 Hari (1 Bulan)</option>
+                        <option value="360">6 Jam (Khusus)</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-ghost" onclick="closeCreateModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitCreate">Generate Voucher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="brand-logo">RT</div>
+                <div class="brand-text">
+                    <h1>
+                        RTNA Wi-Fi Control
+                        <span class="live-pill">
+                            <span class="pulse-dot"></span>
+                            <span id="liveStatusText">LIVE</span>
+                        </span>
+                    </h1>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        SBC Rock Pi S &bull; OpenNDS Controller
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn btn-ghost btn-sm" id="btnRefresh" title="Refresh Sekarang">
+                    <span id="refreshIcon">🔄</span> Refresh
+                </button>
+                <button class="btn btn-primary btn-sm" id="btnOpenCreate">
+                    ➕ Buat Voucher
+                </button>
+                <button class="btn btn-ghost btn-sm" id="btnLogout" title="Kunci Dashboard">
+                    🔒 Kunci
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card card-online">
+                <div class="stat-header">
+                    <span class="stat-title">Online Sekarang</span>
+                    <span class="stat-icon">📶</span>
+                </div>
+                <div class="stat-value" id="statOnline">0</div>
+                <div class="stat-meta">Perangkat aktif memancarkan trafik</div>
+            </div>
+
+            <div class="stat-card card-active">
+                <div class="stat-header">
+                    <span class="stat-title">Voucher Digunakan</span>
+                    <span class="stat-icon">⏳</span>
+                </div>
+                <div class="stat-value" id="statActive">0</div>
+                <div class="stat-meta">Masa sewa masih aktif berjalan</div>
+            </div>
+
+            <div class="stat-card card-unused">
+                <div class="stat-header">
+                    <span class="stat-title">Siap Pakai</span>
+                    <span class="stat-icon">🎫</span>
+                </div>
+                <div class="stat-value" id="statUnused">0</div>
+                <div class="stat-meta">Voucher belum pernah di-login</div>
+            </div>
+
+            <div class="stat-card card-expired">
+                <div class="stat-header">
+                    <span class="stat-title">Habis / Dicabut</span>
+                    <span class="stat-icon">⛔</span>
+                </div>
+                <div class="stat-value" id="statExpired">0</div>
+                <div class="stat-meta">Telah kedaluwarsa atau di-kick</div>
+            </div>
+        </div>
+
+        <!-- Filter & Search Section -->
+        <div class="filter-section">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Cari Nama Pelanggan, Kode Voucher, IP, atau MAC...">
+            </div>
+
+            <div class="filter-pills">
+                <button class="pill-btn active" data-filter="all">Semua (<span id="countAll">0</span>)</button>
+                <button class="pill-btn" data-filter="online">🟢 Online (<span id="countOnline">0</span>)</button>
+                <button class="pill-btn" data-filter="ongoing">⏳ Sesi Aktif (<span id="countOngoing">0</span>)</button>
+                <button class="pill-btn" data-filter="unused">🔵 Siap Pakai (<span id="countUnused">0</span>)</button>
+                <button class="pill-btn" data-filter="inactive">🔴 Habis/Dicabut (<span id="countInactive">0</span>)</button>
+            </div>
+        </div>
+
+        <!-- Main Content Table / Card List -->
+        <div class="content-card">
+            <div class="card-header-inner">
+                <h2>Daftar Pengguna & Sesi Voucher</h2>
+                <div style="font-size: 0.8rem; color: var(--text-muted);" id="lastUpdatedText">
+                    Memperbarui...
+                </div>
+            </div>
+
+            <!-- Desktop View: Table -->
+            <div class="table-responsive">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>Pelanggan</th>
+                            <th>Kode Voucher</th>
+                            <th>Status Jaringan</th>
+                            <th>Alamat IP & MAC</th>
+                            <th>Sisa Waktu</th>
+                            <th style="text-align: right;">Aksi Cepat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">⏳</div>
+                                Memuat data sesi dari server...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile View: Card List -->
+            <div class="mobile-card-list" id="userCardList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    Memuat data sesi dari server...
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer"></div>
+
+    <script>
+        // State Management
+        let savedPin = localStorage.getItem("rtna_admin_pin") || "";
+        let rawVouchers = [];
+        let activeFilter = "all";
+        let searchQuery = "";
+        let refreshIntervalTimer = null;
+        let countdownTimer = null;
+
+        // DOM Elements
+        const pinModal = document.getElementById("pinModal");
+        const pinForm = document.getElementById("pinForm");
+        const pinInput = document.getElementById("pinInput");
+        const pinError = document.getElementById("pinError");
+        
+        const btnRefresh = document.getElementById("btnRefresh");
+        const refreshIcon = document.getElementById("refreshIcon");
+        const btnLogout = document.getElementById("btnLogout");
+        const btnOpenCreate = document.getElementById("btnOpenCreate");
+        const searchInput = document.getElementById("searchInput");
+        const lastUpdatedText = document.getElementById("lastUpdatedText");
+
+        // Action Modal
+        const actionModal = document.getElementById("actionModal");
+        const actionModalTitle = document.getElementById("actionModalTitle");
+        const actionModalDesc = document.getElementById("actionModalDesc");
+        const actionModalConfirmBtn = document.getElementById("actionModalConfirmBtn");
+
+        // Create Modal
+        const createModal = document.getElementById("createModal");
+        const createVoucherForm = document.getElementById("createVoucherForm");
+
+        // Toast Function
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            const icon = type === "success" ? "✅" : type === "error" ? "❌" : "ℹ️";
+            toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(10px)";
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Check PIN / Auth Initial
+        if (savedPin) {
+            verifyPin(savedPin, false);
+        } else {
+            pinModal.style.display = "flex";
+        }
+
+        pinForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const pin = pinInput.value.trim();
+            if (!pin) return;
+            await verifyPin(pin, true);
+        });
+
+        async function verifyPin(pin, isUserInput) {
+            try {
+                const res = await fetch("/api/admin/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    savedPin = pin;
+                    localStorage.setItem("rtna_admin_pin", pin);
+                    pinModal.style.display = "none";
+                    startDashboard();
+                } else {
+                    if (isUserInput) pinError.textContent = data.message || "PIN Admin Salah!";
+                    else pinModal.style.display = "flex";
+                }
+            } catch (err) {
+                if (isUserInput) pinError.textContent = "Gagal terhubung ke server.";
+                pinModal.style.display = "flex";
+            }
+        }
+
+        btnLogout.addEventListener("click", () => {
+            localStorage.removeItem("rtna_admin_pin");
+            savedPin = "";
+            clearInterval(refreshIntervalTimer);
+            pinModal.style.display = "flex";
+            pinInput.value = "";
+        });
+
+        // Start Dashboard Polling & Countdown
+        function startDashboard() {
+            fetchSessions();
+            if (refreshIntervalTimer) clearInterval(refreshIntervalTimer);
+            refreshIntervalTimer = setInterval(fetchSessions, 5000); // Polling setiap 5 detik
+
+            if (countdownTimer) clearInterval(countdownTimer);
+            countdownTimer = setInterval(() => {
+                // Update countdown setiap detik secara lokal di layar
+                rawVouchers.forEach(v => {
+                    if (v.remaining_seconds != null && v.remaining_seconds > 0) {
+                        v.remaining_seconds -= 1;
+                    }
+                });
+                updateCountdownDisplay();
+            }, 1000);
+        }
+
+        // Fetch Sessions from Server
+        async function fetchSessions() {
+            if (!savedPin) return;
+            try {
+                refreshIcon.style.animation = "spin 1s linear infinite";
+                const res = await fetch(`/api/admin/sessions?pin=${encodeURIComponent(savedPin)}`);
+                if (res.status === 401) {
+                    localStorage.removeItem("rtna_admin_pin");
+                    pinModal.style.display = "flex";
+                    return;
+                }
+                const data = await res.json();
+                if (data.success) {
+                    rawVouchers = data.vouchers || [];
+                    updateStats(data.summary);
+                    renderVoucherList();
+                    const now = new Date();
+                    lastUpdatedText.textContent = `Diperbarui: ${now.toLocaleTimeString()}`;
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+            } finally {
+                refreshIcon.style.animation = "";
+            }
+        }
+
+        btnRefresh.addEventListener("click", () => {
+            fetchSessions();
+            showToast("Memperbarui data sesi...", "info");
+        });
+
+        // Update Statistic Cards
+        function updateStats(summary) {
+            if (!summary) return;
+            document.getElementById("statOnline").textContent = summary.online_now || 0;
+            document.getElementById("statActive").textContent = summary.active_ongoing || 0;
+            document.getElementById("statUnused").textContent = summary.available_unused || 0;
+            document.getElementById("statExpired").textContent = summary.expired_revoked || 0;
+
+            document.getElementById("countAll").textContent = summary.total_vouchers || 0;
+            document.getElementById("countOnline").textContent = summary.online_now || 0;
+            document.getElementById("countOngoing").textContent = summary.active_ongoing || 0;
+            document.getElementById("countUnused").textContent = summary.available_unused || 0;
+            document.getElementById("countInactive").textContent = summary.expired_revoked || 0;
+        }
+
+        // Format Remaining Time
+        function formatRemaining(seconds) {
+            if (seconds == null || isNaN(seconds)) return "-";
+            if (seconds <= 0) return "Kedaluwarsa";
+
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            if (days > 0) {
+                return `${days}h ${hours}j ${minutes}m`;
+            } else if (hours > 0) {
+                return `${hours}j ${minutes}m ${secs}d`;
+            } else {
+                return `${minutes}m ${secs}d`;
+            }
+        }
+
+        // Filter Handling
+        document.querySelectorAll(".pill-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                activeFilter = btn.getAttribute("data-filter");
+                renderVoucherList();
+            });
+        });
+
+        searchInput.addEventListener("input", (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            renderVoucherList();
+        });
+
+        // Render Table & Mobile Cards
+        function renderVoucherList() {
+            const tbody = document.getElementById("userTableBody");
+            const mobileList = document.getElementById("userCardList");
+
+            // Filter logic
+            const filtered = rawVouchers.filter(v => {
+                // Filter Tab
+                if (activeFilter === "online" && !v.is_online) return false;
+                if (activeFilter === "ongoing" && !v.is_ongoing) return false;
+                if (activeFilter === "unused" && v.status !== "active") return false;
+                if (activeFilter === "inactive" && v.is_ongoing && v.status === "active") return false;
+
+                // Search Box
+                if (searchQuery) {
+                    const name = (v.customer_name || "").toLowerCase();
+                    const code = (v.code || "").toLowerCase();
+                    const ip = (v.ip_address || "").toLowerCase();
+                    const mac = (v.mac || "").toLowerCase();
+                    if (!name.includes(searchQuery) && !code.includes(searchQuery) && !ip.includes(searchQuery) && !mac.includes(searchQuery)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                const emptyHtml = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <p>Tidak ada voucher atau pengguna yang cocok.</p>
+                    </div>
+                `;
+                tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
+                mobileList.innerHTML = emptyHtml;
+                return;
+            }
+
+            // Generate Desktop Rows
+            let desktopRows = "";
+            let mobileCards = "";
+
+            filtered.forEach(v => {
+                let statusBadge = "";
+                if (v.status === "revoked") {
+                    statusBadge = `<span class="status-badge revoked">Dicabut</span>`;
+                } else if (v.status === "expired" || (v.remaining_seconds != null && v.remaining_seconds <= 0 && v.status === "used")) {
+                    statusBadge = `<span class="status-badge expired">Kedaluwarsa</span>`;
+                } else if (v.is_online) {
+                    statusBadge = `<span class="status-badge online"><span class="pulse-dot"></span> Online</span>`;
+                } else if (v.is_ongoing) {
+                    statusBadge = `<span class="status-badge standby">Standby</span>`;
+                } else {
+                    statusBadge = `<span class="status-badge unused">Siap Pakai</span>`;
+                }
+
+                const remainingStr = formatRemaining(v.remaining_seconds);
+                const isUrgent = v.remaining_seconds != null && v.remaining_seconds > 0 && v.remaining_seconds < 1800;
+                const countdownClass = `countdown-text ${isUrgent ? 'urgent' : ''}`;
+
+                // Action Buttons
+                const canKick = v.is_online && v.mac && !v.mac.startsWith("ip-");
+                const canRevoke = v.status !== "revoked" && v.status !== "expired";
+
+                const kickBtn = canKick
+                    ? `<button class="btn btn-warning-soft btn-sm" onclick="confirmKick('${v.mac}', '${v.ip_address || ''}', '${escapeHtml(v.customer_name)}')">🛑 Putus (Kick)</button>`
+                    : ``;
+
+                const revokeBtn = `<button class="btn btn-danger-soft btn-sm" onclick="confirmRevoke('${v.code}', '${v.mac || ''}', '${escapeHtml(v.customer_name)}')">🗑️ Hapus & Blokir</button>`;
+
+                // Desktop Table Row
+                desktopRows += `
+                    <tr>
+                        <td>
+                            <div class="customer-name">${escapeHtml(v.customer_name)}</div>
+                            <div style="font-size: 0.725rem; color: var(--text-muted);">ID: #${v.id} &bull; Dibuat: ${new Date(v.created_at).toLocaleDateString()}</div>
+                        </td>
+                        <td>
+                            <span class="voucher-badge">${v.code}</span>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="device-info">IP: ${v.ip_address || '-'}</div>
+                            <div class="device-info">MAC: ${v.mac || '-'}</div>
+                        </td>
+                        <td>
+                            <span class="${countdownClass}" id="cd-desk-${v.id}">${remainingStr}</span>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">Durasi: ${Math.round(v.duration_minutes / 60)} Jam</div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="actions-cell" style="justify-content: flex-end;">
+                                ${kickBtn}
+                                ${revokeBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                // Mobile Card View
+                mobileCards += `
+                    <div class="user-mobile-card">
+                        <div class="umc-header">
+                            <div>
+                                <div class="customer-name">${escapeHtml(v.customer_name)}</div>
+                                <span class="voucher-badge">${v.code}</span>
+                            </div>
+                            <div>${statusBadge}</div>
+                        </div>
+                        <div class="umc-grid">
+                            <div>
+                                <span style="color: var(--text-muted); display: block; font-size: 0.7rem;">IP & MAC</span>
+                                <span style="font-family: monospace;">${v.ip_address || '-'}</span><br>
+                                <span style="font-family: monospace; font-size: 0.7rem; color: var(--text-muted);">${v.mac || '-'}</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-muted); display: block; font-size: 0.7rem;">SISA WAKTU</span>
+                                <span class="${countdownClass}" id="cd-mob-${v.id}">${remainingStr}</span>
+                            </div>
+                        </div>
+                        <div class="umc-actions">
+                            ${kickBtn}
+                            ${revokeBtn}
+                        </div>
+                    </div>
+                `;
+            });
+
+            tbody.innerHTML = desktopRows;
+            mobileList.innerHTML = mobileCards;
+        }
+
+        // Live Countdown tick
+        function updateCountdownDisplay() {
+            rawVouchers.forEach(v => {
+                const str = formatRemaining(v.remaining_seconds);
+                const elDesk = document.getElementById(`cd-desk-${v.id}`);
+                const elMob = document.getElementById(`cd-mob-${v.id}`);
+                if (elDesk) elDesk.textContent = str;
+                if (elMob) elMob.textContent = str;
+            });
+        }
+
+        // Kick & Revoke Action Modals
+        let pendingAction = null;
+
+        function confirmKick(mac, ip, name) {
+            actionModalTitle.textContent = "Putus Sesi Sementara (Kick)";
+            actionModalDesc.innerHTML = `
+                Apakah Anda ingin memutuskan koneksi perangkat <b>${name}</b> (MAC: <code>${mac}</code>)?<br><br>
+                Pelanggan akan terputus dari internet detik ini juga dan harus login kembali. Vouchernya <b>tidak dihapus</b>.
+            `;
+            actionModalConfirmBtn.className = "btn btn-primary";
+            actionModalConfirmBtn.textContent = "Putuskan Sekarang";
+            actionModal.classList.add("active");
+
+            pendingAction = async () => {
+                try {
+                    const res = await fetch("/api/admin/kick", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ mac, ip, pin: savedPin })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, "success");
+                        fetchSessions();
+                    } else {
+                        showToast(data.error || "Gagal memutuskan", "error");
+                    }
+                } catch (e) {
+                    showToast("Kesalahan koneksi ke server", "error");
+                }
+            };
+        }
+
+        function confirmRevoke(code, mac, name) {
+            actionModalTitle.textContent = "Cabut & Hapus Voucher";
+            actionModalDesc.innerHTML = `
+                <span style="color: #F87171; font-weight: bold;">⚠️ PERINGATAN KRITIS:</span><br>
+                Anda akan mencabut voucher <b>${code}</b> milik <b>${name}</b>.<br><br>
+                Koneksi internet perangkat akan <b>langsung diputus detik ini juga (&lt; 1 detik)</b> dan izinnya dihapus permanen dari OpenNDS!
+            `;
+            actionModalConfirmBtn.className = "btn btn-danger-soft";
+            actionModalConfirmBtn.style.background = "#DC2626";
+            actionModalConfirmBtn.style.color = "white";
+            actionModalConfirmBtn.textContent = "Cabut & Blokir Sekarang";
+            actionModal.classList.add("active");
+
+            pendingAction = async () => {
+                try {
+                    const res = await fetch("/api/revoke", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ code, mac, pin: savedPin })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, "success");
+                        fetchSessions();
+                    } else {
+                        showToast(data.error || "Gagal mencabut voucher", "error");
+                    }
+                } catch (e) {
+                    showToast("Kesalahan koneksi ke server", "error");
+                }
+            };
+        }
+
+        actionModalConfirmBtn.addEventListener("click", async () => {
+            closeActionModal();
+            if (pendingAction) await pendingAction();
+            pendingAction = null;
+        });
+
+        function closeActionModal() {
+            actionModal.classList.remove("active");
+            pendingAction = null;
+        }
+
+        // Create Voucher Modal
+        btnOpenCreate.addEventListener("click", () => {
+            createModal.classList.add("active");
+        });
+
+        function closeCreateModal() {
+            createModal.classList.remove("active");
+        }
+
+        createVoucherForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const customer_name = document.getElementById("newCustName").value.trim();
+            const duration_minutes = parseInt(document.getElementById("newDuration").value);
+            const btnSubmit = document.getElementById("btnSubmitCreate");
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = "Membuat...";
+
+            try {
+                const res = await fetch("/api/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ customer_name, duration_minutes, pin: savedPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Voucher berhasil dibuat: ${data.code}`, "success");
+                    closeCreateModal();
+                    createVoucherForm.reset();
+                    fetchSessions();
+                } else {
+                    showToast(data.error || "Gagal membuat voucher", "error");
+                }
+            } catch (err) {
+                showToast("Kesalahan koneksi ke server", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = "Generate Voucher";
+            }
+        });
+
+        // Helper escape HTML
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+    </script>
+</body>
+</html>

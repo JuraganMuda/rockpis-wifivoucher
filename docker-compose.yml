@@ -27,10 +27,13 @@ services:
     network_mode: "host"
     environment:
       - API_KEY=rahasia-appsheet-123
+      - ADMIN_PIN=123456
       - DB_HOST=127.0.0.1
       - DB_USER=radius
       - DB_PASSWORD=radius_password
       - DB_NAME=radius_db
+    volumes:
+      - /tmp:/tmp
     depends_on:
       - db
     deploy:
