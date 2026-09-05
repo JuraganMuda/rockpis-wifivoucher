@@ -712,6 +712,61 @@
             margin-bottom: 0.75rem;
             opacity: 0.6;
         }
+
+        /* WhatsApp Status Badges */
+        .badge-wa {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.2rem 0.55rem;
+            border-radius: 8px;
+            margin-top: 0.25rem;
+            line-height: 1.2;
+        }
+        .badge-wa.sent {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .badge-wa.failed {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .badge-wa.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .badge-wa.none {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        /* Action button styles */
+        .btn-wa-resend {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .btn-wa-resend:hover {
+            background: rgba(16, 185, 129, 0.3);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .btn-edit {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .btn-edit:hover {
+            background: rgba(99, 102, 241, 0.3);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -760,6 +815,10 @@
                     <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NAMA PELANGGAN (TITLE APPSHEET)</label>
                     <input type="text" id="newCustName" placeholder="Contoh: VIKSA / OPPO ADAM" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
                 </div>
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NOMOR WHATSAPP (OPSIONAL)</label>
+                    <input type="text" id="newCustPhone" placeholder="Contoh: 08123456789" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                </div>
                 <div style="margin-bottom: 1.5rem; text-align: left;">
                     <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">PAKET DURASI (STATUS APPSHEET)</label>
                     <select id="newDuration" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
@@ -771,6 +830,90 @@
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" class="btn btn-ghost" onclick="closeCreateModal()">Batal</button>
                     <button type="submit" class="btn btn-primary" id="btnSubmitCreate">Generate Voucher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Data Pelanggan -->
+    <div id="editCustomerModal" class="app-modal">
+        <div class="modal-body-card">
+            <h3 style="font-family: 'Outfit', sans-serif; margin-bottom: 0.5rem; font-size: 1.25rem;">Edit Data Pelanggan</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+                Perbarui nama atau nomor WhatsApp voucher <span id="editVoucherCodeBadge" class="voucher-badge"></span>.
+            </p>
+            <form id="editCustomerForm">
+                <input type="hidden" id="editVoucherId">
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NAMA PELANGGAN</label>
+                    <input type="text" id="editCustName" placeholder="Contoh: Adam" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                </div>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NOMOR WHATSAPP (08xxx / 62xxx)</label>
+                    <input type="text" id="editCustPhone" placeholder="Contoh: 08123456789" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitEdit">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Pengaturan Bisnis & Fonnte WA -->
+    <div id="settingsModal" class="app-modal">
+        <div class="modal-body-card" style="max-width: 520px; max-height: 88vh; overflow-y: auto;">
+            <h3 style="font-family: 'Outfit', sans-serif; margin-bottom: 0.5rem; font-size: 1.25rem;">Pengaturan Bisnis & WhatsApp</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                Kustomisasi nama usaha, SSID Wi-Fi, token API Fonnte, dan template pesan.
+            </p>
+            <form id="settingsForm">
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NAMA JENIS USAHA / BRAND</label>
+                    <input type="text" id="setBusinessName" placeholder="Contoh: RTNA Wi-Fi / Warkop Berkah" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;" required>
+                </div>
+
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">NAMA WI-FI (SSID)</label>
+                    <input type="text" id="setWifiSsid" placeholder="Contoh: RTNA WiFi Voucher" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;" required>
+                </div>
+
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">URL PORTAL LOGIN</label>
+                    <input type="text" id="setPortalUrl" placeholder="http://10.0.0.1:3000" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;" required>
+                </div>
+
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">TOKEN API FONNTE (WHATSAPP)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" id="setFonnteToken" placeholder="Masukkan Token Akun Fonnte Anda" style="flex: 1; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white;">
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="toggleTokenVisibility()">👁️</button>
+                    </div>
+                    <div style="margin-top: 0.4rem; font-size: 0.7rem; color: var(--text-muted);">
+                        Dapatkan token gratis di dashboard <a href="https://md.fonnte.com" target="_blank" style="color: #818cf8; text-decoration: underline;">fonnte.com</a>.
+                    </div>
+                </div>
+
+                <!-- Test WA Section -->
+                <div style="margin-bottom: 1.25rem; padding: 0.85rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; text-align: left;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: #a5b4fc; margin-bottom: 0.35rem;">UJI COBA KIRIM WA (TEST TOKEN)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="testWaPhone" placeholder="08xxxxxxxxxx" style="flex: 1; padding: 0.6rem 0.75rem; background: rgba(11,15,25,0.8); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 0.85rem;">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnTestWa" onclick="triggerTestWa()">Kirim Tes</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">TEMPLATE PESAN WHATSAPP</label>
+                    <textarea id="setWaTemplate" rows="6" style="width: 100%; padding: 0.75rem; background: rgba(11,15,25,0.7); border: 1px solid var(--border-color); border-radius: 10px; color: white; font-size: 0.8rem; font-family: monospace; line-height: 1.4; resize: vertical;"></textarea>
+                    <div style="margin-top: 0.4rem; font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
+                        <b>Placeholder Otomatis:</b> <code>{nama}</code>, <code>{kode}</code>, <code>{paket}</code>, <code>{berlaku_hingga}</code>, <code>{nama_usaha}</code>, <code>{nama_wifi}</code>, <code>{portal_url}</code>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-ghost" onclick="closeSettingsModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitSettings">Simpan Pengaturan</button>
                 </div>
             </form>
         </div>
@@ -800,6 +943,9 @@
             <div class="header-actions">
                 <button class="btn btn-ghost btn-sm" id="btnRefresh" title="Refresh Sekarang">
                     <span id="refreshIcon">🔄</span> Refresh
+                </button>
+                <button class="btn btn-ghost btn-sm" id="btnOpenSettings" title="Pengaturan Bisnis & Fonnte WA">
+                    ⚙️ Pengaturan Bisnis
                 </button>
                 <button class="btn btn-primary btn-sm" id="btnOpenCreate">
                     ➕ Buat Voucher
@@ -881,6 +1027,7 @@
                         <tr>
                             <th>Pelanggan</th>
                             <th>Kode Voucher</th>
+                            <th>WhatsApp Pelanggan</th>
                             <th>Status Jaringan</th>
                             <th>Alamat IP & MAC</th>
                             <th>Sisa Waktu</th>
@@ -889,7 +1036,7 @@
                     </thead>
                     <tbody id="userTableBody">
                         <tr>
-                            <td colspan="6" class="empty-state">
+                            <td colspan="7" class="empty-state">
                                 <div class="empty-state-icon">⏳</div>
                                 Memuat data sesi dari server...
                             </td>
@@ -931,6 +1078,7 @@
         const refreshIcon = document.getElementById("refreshIcon");
         const btnLogout = document.getElementById("btnLogout");
         const btnOpenCreate = document.getElementById("btnOpenCreate");
+        const btnOpenSettings = document.getElementById("btnOpenSettings");
         const searchInput = document.getElementById("searchInput");
         const lastUpdatedText = document.getElementById("lastUpdatedText");
 
@@ -943,6 +1091,14 @@
         // Create Modal
         const createModal = document.getElementById("createModal");
         const createVoucherForm = document.getElementById("createVoucherForm");
+
+        // Edit Customer Modal
+        const editCustomerModal = document.getElementById("editCustomerModal");
+        const editCustomerForm = document.getElementById("editCustomerForm");
+
+        // Settings Modal
+        const settingsModal = document.getElementById("settingsModal");
+        const settingsForm = document.getElementById("settingsForm");
 
         // Toast Function
         function showToast(message, type = "info") {
@@ -1138,9 +1294,10 @@
                 if (searchQuery) {
                     const name = (v.customer_name || "").toLowerCase();
                     const code = (v.code || "").toLowerCase();
+                    const phone = (v.phone_number || "").toLowerCase();
                     const ip = (v.ip_address || "").toLowerCase();
                     const mac = (v.mac || "").toLowerCase();
-                    if (!name.includes(searchQuery) && !code.includes(searchQuery) && !ip.includes(searchQuery) && !mac.includes(searchQuery)) {
+                    if (!name.includes(searchQuery) && !code.includes(searchQuery) && !phone.includes(searchQuery) && !ip.includes(searchQuery) && !mac.includes(searchQuery)) {
                         return false;
                     }
                 }
@@ -1154,7 +1311,7 @@
                         <p>Tidak ada voucher atau pengguna yang cocok.</p>
                     </div>
                 `;
-                tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7">${emptyHtml}</td></tr>`;
                 mobileList.innerHTML = emptyHtml;
                 return;
             }
@@ -1177,19 +1334,41 @@
                     statusBadge = `<span class="status-badge unused">Siap Pakai</span>`;
                 }
 
+                // WhatsApp Status Badge
+                let waBadge = "";
+                if (v.wa_status === "sent") {
+                    const sentTime = v.wa_sent_at ? new Date(v.wa_sent_at).toLocaleTimeString() : '';
+                    waBadge = `<div class="badge-wa sent" title="Terkirim jam ${sentTime}">✅ WA Terkirim</div>`;
+                } else if (v.wa_status === "failed") {
+                    waBadge = `<div class="badge-wa failed" title="${escapeHtml(v.wa_error || 'Gagal')}">⚠️ WA Gagal</div>`;
+                } else if (v.wa_status === "pending") {
+                    waBadge = `<div class="badge-wa pending">⏳ WA Mengirim...</div>`;
+                } else {
+                    waBadge = `<div class="badge-wa none">⚪ Belum Ada WA</div>`;
+                }
+
+                const phoneDisplay = v.phone_number 
+                    ? `<div style="font-family: monospace; font-size: 0.8rem; color: #f1f5f9; font-weight: 500;">📱 +${v.phone_number}</div>` 
+                    : `<div style="font-size: 0.75rem; color: var(--text-muted);">-</div>`;
+
                 const remainingStr = formatRemaining(v.remaining_seconds);
                 const isUrgent = v.remaining_seconds != null && v.remaining_seconds > 0 && v.remaining_seconds < 1800;
                 const countdownClass = `countdown-text ${isUrgent ? 'urgent' : ''}`;
 
                 // Action Buttons
                 const canKick = v.is_online && v.mac && !v.mac.startsWith("ip-");
-                const canRevoke = v.status !== "revoked" && v.status !== "expired";
+
+                const editBtn = `<button class="btn btn-edit btn-sm" onclick="openEditModal(${v.id}, '${escapeHtml(v.customer_name)}', '${v.phone_number || ''}', '${v.code}')" title="Edit Nama / Nomor WhatsApp">✏️ Edit</button>`;
+                
+                const resendWaBtn = v.phone_number 
+                    ? `<button class="btn btn-wa-resend btn-sm" onclick="resendWa(${v.id}, '${v.code}', '${v.phone_number}')" title="Kirim Ulang Pesan ke WhatsApp">📲 Kirim WA</button>`
+                    : `<button class="btn btn-ghost btn-sm" style="opacity: 0.4;" disabled title="Nomor WhatsApp belum diisi">📲 Kirim WA</button>`;
 
                 const kickBtn = canKick
-                    ? `<button class="btn btn-warning-soft btn-sm" onclick="confirmKick('${v.mac}', '${v.ip_address || ''}', '${escapeHtml(v.customer_name)}')">🛑 Putus (Kick)</button>`
+                    ? `<button class="btn btn-warning-soft btn-sm" onclick="confirmKick('${v.mac}', '${v.ip_address || ''}', '${escapeHtml(v.customer_name)}')">🛑 Putus</button>`
                     : ``;
 
-                const revokeBtn = `<button class="btn btn-danger-soft btn-sm" onclick="confirmRevoke('${v.code}', '${v.mac || ''}', '${escapeHtml(v.customer_name)}')">🗑️ Hapus & Blokir</button>`;
+                const revokeBtn = `<button class="btn btn-danger-soft btn-sm" onclick="confirmRevoke('${v.code}', '${v.mac || ''}', '${escapeHtml(v.customer_name)}')">🗑️ Hapus</button>`;
 
                 // Desktop Table Row
                 desktopRows += `
@@ -1200,6 +1379,10 @@
                         </td>
                         <td>
                             <span class="voucher-badge">${v.code}</span>
+                        </td>
+                        <td>
+                            ${phoneDisplay}
+                            ${waBadge}
                         </td>
                         <td>${statusBadge}</td>
                         <td>
@@ -1212,6 +1395,8 @@
                         </td>
                         <td style="text-align: right;">
                             <div class="actions-cell" style="justify-content: flex-end;">
+                                ${editBtn}
+                                ${resendWaBtn}
                                 ${kickBtn}
                                 ${revokeBtn}
                             </div>
@@ -1227,7 +1412,13 @@
                                 <div class="customer-name">${escapeHtml(v.customer_name)}</div>
                                 <span class="voucher-badge">${v.code}</span>
                             </div>
-                            <div>${statusBadge}</div>
+                            <div>
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        <div style="margin: 0.5rem 0; padding: 0.4rem 0.6rem; background: rgba(15,23,42,0.5); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>${phoneDisplay}</div>
+                            <div>${waBadge}</div>
                         </div>
                         <div class="umc-grid">
                             <div>
@@ -1241,6 +1432,8 @@
                             </div>
                         </div>
                         <div class="umc-actions">
+                            ${editBtn}
+                            ${resendWaBtn}
                             ${kickBtn}
                             ${revokeBtn}
                         </div>
@@ -1371,6 +1564,7 @@
         createVoucherForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const customer_name = document.getElementById("newCustName").value.trim();
+            const phone_number = document.getElementById("newCustPhone").value.trim();
             const duration_minutes = parseInt(document.getElementById("newDuration").value);
             const btnSubmit = document.getElementById("btnSubmitCreate");
 
@@ -1381,7 +1575,7 @@
                 const res = await fetch("/api/generate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ customer_name, duration_minutes, pin: savedPin })
+                    body: JSON.stringify({ customer_name, phone_number, duration_minutes, pin: savedPin })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -1400,6 +1594,182 @@
             }
         });
 
+        // Edit Customer Modal Functions
+        function openEditModal(id, name, phone, code) {
+            document.getElementById("editVoucherId").value = id;
+            document.getElementById("editCustName").value = name === "Tanpa Nama" ? "" : name;
+            document.getElementById("editCustPhone").value = phone;
+            document.getElementById("editVoucherCodeBadge").textContent = code;
+            editCustomerModal.classList.add("active");
+        }
+
+        function closeEditModal() {
+            editCustomerModal.classList.remove("active");
+        }
+
+        editCustomerForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.getElementById("editVoucherId").value;
+            const customer_name = document.getElementById("editCustName").value.trim();
+            const phone_number = document.getElementById("editCustPhone").value.trim();
+            const btnSubmit = document.getElementById("btnSubmitEdit");
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = "Menyimpan...";
+
+            try {
+                const res = await fetch("/api/admin/voucher/edit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id, customer_name, phone_number, pin: savedPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Data pelanggan berhasil diperbarui", "success");
+                    closeEditModal();
+                    fetchSessions();
+                } else {
+                    showToast(data.error || "Gagal memperbarui data", "error");
+                }
+            } catch (err) {
+                showToast("Gagal terhubung ke server", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = "Simpan Perubahan";
+            }
+        });
+
+        // Resend WhatsApp Function
+        async function resendWa(id, code, phone) {
+            if (!confirm(`Kirim ulang pesan rincian voucher ${code} ke nomor +${phone}?`)) {
+                return;
+            }
+
+            showToast(`Mengirim WhatsApp ke +${phone}...`, "info");
+
+            try {
+                const res = await fetch("/api/admin/voucher/resend-wa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id, pin: savedPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                    fetchSessions();
+                } else {
+                    showToast(data.message || data.error || "Gagal mengirim WhatsApp", "error");
+                    fetchSessions();
+                }
+            } catch (err) {
+                showToast("Gagal terhubung ke gateway WhatsApp", "error");
+            }
+        }
+
+        // Settings Modal Functions
+        btnOpenSettings.addEventListener("click", () => {
+            openSettingsModal();
+        });
+
+        async function openSettingsModal() {
+            settingsModal.classList.add("active");
+            try {
+                const res = await fetch(`/api/settings?pin=${encodeURIComponent(savedPin)}`);
+                const data = await res.json();
+                if (data.success && data.settings) {
+                    document.getElementById("setBusinessName").value = data.settings.business_name || "";
+                    document.getElementById("setWifiSsid").value = data.settings.wifi_ssid || "";
+                    document.getElementById("setPortalUrl").value = data.settings.login_portal_url || "";
+                    document.getElementById("setFonnteToken").value = data.settings.fonnte_token || "";
+                    document.getElementById("setWaTemplate").value = data.settings.wa_template || "";
+                }
+            } catch (e) {
+                showToast("Gagal memuat pengaturan", "error");
+            }
+        }
+
+        function closeSettingsModal() {
+            settingsModal.classList.remove("active");
+        }
+
+        function toggleTokenVisibility() {
+            const el = document.getElementById("setFonnteToken");
+            el.type = el.type === "password" ? "text" : "password";
+        }
+
+        async function triggerTestWa() {
+            const phone = document.getElementById("testWaPhone").value.trim();
+            const token = document.getElementById("setFonnteToken").value.trim();
+            const btn = document.getElementById("btnTestWa");
+
+            if (!phone) {
+                showToast("Masukkan nomor HP untuk uji coba (contoh: 0812xxx)", "error");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Mengirim...";
+
+            try {
+                const res = await fetch("/api/admin/test-wa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone_number: phone, fonnte_token: token, pin: savedPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                } else {
+                    showToast(data.message || "Gagal kirim pesan tes", "error");
+                }
+            } catch (err) {
+                showToast("Gagal terhubung ke API WhatsApp", "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Kirim Tes";
+            }
+        }
+
+        settingsForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const business_name = document.getElementById("setBusinessName").value.trim();
+            const wifi_ssid = document.getElementById("setWifiSsid").value.trim();
+            const login_portal_url = document.getElementById("setPortalUrl").value.trim();
+            const fonnte_token = document.getElementById("setFonnteToken").value.trim();
+            const wa_template = document.getElementById("setWaTemplate").value.trim();
+            const btnSubmit = document.getElementById("btnSubmitSettings");
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = "Menyimpan...";
+
+            try {
+                const res = await fetch("/api/admin/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        business_name,
+                        wifi_ssid,
+                        login_portal_url,
+                        fonnte_token,
+                        wa_template,
+                        pin: savedPin
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, "success");
+                    closeSettingsModal();
+                } else {
+                    showToast(data.error || "Gagal menyimpan pengaturan", "error");
+                }
+            } catch (err) {
+                showToast("Gagal terhubung ke server", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = "Simpan Pengaturan";
+            }
+        });
+
         // Helper escape HTML
         function escapeHtml(text) {
             if (!text) return "";
@@ -1408,3 +1778,4 @@
     </script>
 </body>
 </html>
+

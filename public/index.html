@@ -141,6 +141,44 @@
             line-height: 1.4;
         }
 
+        .form-input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .optional-tag {
+            font-size: 0.68rem;
+            background: rgba(99, 102, 241, 0.18);
+            color: #a5b4fc;
+            padding: 0.15rem 0.45rem;
+            border-radius: 6px;
+            margin-left: 0.35rem;
+            font-weight: 500;
+        }
+
+        .wa-hint {
+            font-size: 0.725rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            line-height: 1.3;
+        }
+
         /* Spinner */
         .spinner {
             display: none;
@@ -180,12 +218,25 @@
 
     <div class="container">
         <div class="card">
-            <h1>RTNA WiFi Voucher</h1>
-            <p class="subtitle">Silahkan Masukkan kode voucher Anda</p>
+            <h1 id="brandTitle">RTNA WiFi Voucher</h1>
+            <p class="subtitle" id="brandSubtitle">Silahkan masukkan kode voucher Anda</p>
             
             <form id="loginForm">
                 <div class="input-group">
-                    <label for="code">KODE VOUCHER</label>
+                    <label for="customerName">NAMA ANDA <span class="optional-tag">Opsional</span></label>
+                    <input type="text" id="customerName" class="form-input" placeholder="Contoh: Adam / Viksa" autocomplete="name">
+                </div>
+
+                <div class="input-group">
+                    <label for="phoneNumber">NOMOR WHATSAPP <span class="optional-tag">Opsional</span></label>
+                    <input type="tel" id="phoneNumber" class="form-input" placeholder="Contoh: 08123456789" autocomplete="tel">
+                    <div class="wa-hint">
+                        <span>📲</span> Kode voucher & masa aktif akan dikirim ke WA Anda
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="code">KODE VOUCHER <span style="color: #ef4444;">*</span></label>
                     <input type="text" id="code" name="code" placeholder="XXXXXX" maxlength="6" autocomplete="off" required>
                 </div>
                 
@@ -199,7 +250,8 @@
 
             <div class="warning-box">
                 <strong>💡 TIPS KONEKSI:</strong><br>
-                • <b>Auto-Connect:</b> Jangan hapus/lupakan jaringan WiFi ini agar HP otomatis terhubung ke internet tanpa memasukkan ulang kode selama masa aktif masih ada.
+                • <b>Auto-Connect:</b> Jangan hapus/lupakan jaringan WiFi ini agar HP otomatis terhubung ke internet tanpa memasukkan ulang kode selama masa aktif masih ada.<br>
+                • <b>Simpan Kode:</b> Isi nomor WA Anda di atas agar kode voucher tersimpan di chat jika sewaktu-waktu terputus.
             </div>
 
         </div>
@@ -240,10 +292,30 @@
         const autoLoginOverlay = document.getElementById('autoLoginOverlay');
         const form = document.getElementById('loginForm');
         const codeInput = document.getElementById('code');
+        const custNameInput = document.getElementById('customerName');
+        const phoneInput = document.getElementById('phoneNumber');
         const statusMessage = document.getElementById('statusMessage');
         const submitBtn = document.getElementById('submitBtn');
         const btnText = document.getElementById('btnText');
         const btnSpinner = document.getElementById('btnSpinner');
+
+        // Memuat branding dinamis dari /api/settings
+        async function loadPublicBranding() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if (data && data.settings) {
+                    const biz = data.settings.business_name || "RTNA Wi-Fi";
+                    const ssid = data.settings.wifi_ssid || "RTNA WiFi Voucher";
+                    document.title = `${biz} - Login Hotspot`;
+                    document.getElementById('brandTitle').textContent = biz;
+                    document.getElementById('brandSubtitle').textContent = `Terhubung ke Wi-Fi ${ssid}`;
+                }
+            } catch (e) {
+                console.warn("Could not load branding settings:", e);
+            }
+        }
+        loadPublicBranding();
 
         // Check if there is an active session for this MAC address
         async function checkAutoLogin() {
@@ -277,10 +349,17 @@
             this.value = this.value.toUpperCase().replace(/[01OIl\s]/g, '');
         });
 
+        // Filter nomor HP hanya angka
+        phoneInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9+]/g, '');
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const code = codeInput.value;
+            const code = codeInput.value.trim();
+            const customer_name = custNameInput.value.trim();
+            const phone_number = phoneInput.value.trim();
             
             btnText.style.display = 'none';
             btnSpinner.style.display = 'block';
@@ -292,13 +371,21 @@
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, clientmac, clientip, authaction, tok })
+                    body: JSON.stringify({
+                        code,
+                        clientmac,
+                        clientip,
+                        authaction,
+                        tok,
+                        customer_name,
+                        phone_number
+                    })
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
-                    statusMessage.textContent = 'Berhasil! Mohon Tunggu Sebentar, Sampai Sukses Mengalihkan Anda ke Halaman Baru.';
+                    statusMessage.textContent = 'Berhasil! Mohon tunggu sebentar, mengalihkan Anda ke internet...';
                     statusMessage.className = 'message success';
                     
                     setTimeout(() => {
