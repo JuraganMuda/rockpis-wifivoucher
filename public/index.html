@@ -17,166 +17,251 @@
         }
 
         body, html {
-            height: 100%;
+            min-height: 100%;
             margin: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-color);
             background-image: 
-                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15), transparent 25%);
+                radial-gradient(circle at 15% 25%, rgba(79, 70, 229, 0.18), transparent 35%),
+                radial-gradient(circle at 85% 75%, rgba(16, 185, 129, 0.15), transparent 35%),
+                radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.8), transparent 85%);
+            background-attachment: fixed;
             color: var(--text-main);
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 1.5rem 1rem;
+            box-sizing: border-box;
         }
 
         .container {
             width: 100%;
-            max-width: 400px;
-            padding: 2rem;
+            max-width: 420px;
+            margin: auto;
+            padding: 0;
             box-sizing: border-box;
         }
 
         .card {
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            padding: 2.5rem 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 2.25rem 1.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
             text-align: center;
-            transform: translateY(0);
-            transition: transform 0.3s ease;
+            box-sizing: border-box;
         }
 
         h1 {
-            margin: 0 0 0.5rem 0;
+            margin: 0 0 0.35rem 0;
             font-size: 1.75rem;
             font-weight: 800;
             background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
         }
 
         p.subtitle {
             color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            margin: 0 0 1.75rem 0;
+            line-height: 1.4;
         }
 
         .input-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.15rem;
             text-align: left;
         }
 
         .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.45rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-muted);
+            letter-spacing: 0.03em;
         }
 
-        input[type="text"] {
+        .form-input {
             width: 100%;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.85rem 1rem;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             color: white;
-            font-size: 1.25rem;
-            font-family: monospace;
-            text-align: center;
-            letter-spacing: 4px;
-            text-transform: uppercase;
+            font-size: 0.95rem;
+            font-family: inherit;
+            text-align: left;
+            letter-spacing: normal;
+            text-transform: none;
             box-sizing: border-box;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
         }
 
-        input[type="text"]:focus {
+        .form-input::placeholder {
+            color: rgba(148, 163, 184, 0.55);
+            font-size: 0.9rem;
+            font-family: inherit;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .form-input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+        }
+
+        /* Voucher Code Input Distinctive Style */
+        #code {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1.5px dashed rgba(99, 102, 241, 0.5);
+            border-radius: 12px;
+            color: #a5b4fc;
+            font-size: 1.35rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+
+        #code::placeholder {
+            letter-spacing: 6px;
+            color: rgba(148, 163, 184, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #code:focus {
+            outline: none;
+            border-style: solid;
+            border-color: var(--primary);
+            color: #ffffff;
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+        }
+
+        .optional-tag {
+            font-size: 0.65rem;
+            background: rgba(99, 102, 241, 0.18);
+            color: #a5b4fc;
+            padding: 0.15rem 0.45rem;
+            border-radius: 6px;
+            margin-left: 0.4rem;
+            font-weight: 500;
+            letter-spacing: normal;
+        }
+
+        .wa-hint {
+            font-size: 0.725rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            line-height: 1.3;
         }
 
         button {
             width: 100%;
-            padding: 1rem;
-            background: var(--primary);
+            padding: 0.95rem 1rem;
+            margin-top: 0.5rem;
+            background: linear-gradient(135deg, #4F46E5, #4338CA);
             color: white;
             border: none;
             border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
         }
 
         button:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #4338CA, #3730A3);
+            transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
         }
 
+        button:active {
+            transform: translateY(0);
+        }
+
         .message {
-            margin-top: 1rem;
-            font-size: 0.875rem;
+            margin-top: 0.85rem;
+            font-size: 0.85rem;
             min-height: 20px;
+            line-height: 1.4;
         }
 
         .message.error { color: var(--error); }
         .message.success { color: var(--success); }
         
-        .warning-box {
+        /* Modern Guide Card */
+        .info-guide-box {
             margin-top: 1.5rem;
-            padding: 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            border-left: 3px solid var(--error);
-            border-radius: 8px;
-            font-size: 0.8rem;
-            color: #fca5a5;
+            padding: 1rem 1.15rem;
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
             text-align: left;
-            line-height: 1.4;
         }
 
-        .form-input {
-            width: 100%;
-            padding: 0.85rem 1rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: white;
-            font-size: 0.95rem;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-
-        .optional-tag {
-            font-size: 0.68rem;
-            background: rgba(99, 102, 241, 0.18);
-            color: #a5b4fc;
-            padding: 0.15rem 0.45rem;
-            border-radius: 6px;
-            margin-left: 0.35rem;
-            font-weight: 500;
-        }
-
-        .wa-hint {
-            font-size: 0.725rem;
-            color: var(--text-muted);
-            margin-top: 0.35rem;
+        .igb-header {
             display: flex;
             align-items: center;
-            gap: 0.35rem;
-            line-height: 1.3;
+            gap: 0.45rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .igb-icon {
+            font-size: 1rem;
+        }
+
+        .igb-title {
+            font-size: 0.775rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #cbd5e1;
+        }
+
+        .igb-list {
+            margin: 0;
+            padding-left: 1.15rem;
+            color: #94a3b8;
+            font-size: 0.775rem;
+            line-height: 1.5;
+        }
+
+        .igb-list li {
+            margin-bottom: 0.45rem;
+        }
+
+        .igb-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .igb-list strong {
+            color: #e2e8f0;
+        }
+
+        .igb-list code {
+            background: rgba(15, 23, 42, 0.75);
+            color: #a5b4fc;
+            padding: 0.12rem 0.35rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            border: 1px solid rgba(99, 102, 241, 0.25);
         }
 
         /* Spinner */
@@ -207,6 +292,28 @@
             z-index: 9999;
             color: white;
         }
+
+        @media (max-width: 480px) {
+            body, html {
+                padding: 1rem 0.75rem;
+            }
+            .card {
+                padding: 1.75rem 1.25rem;
+                border-radius: 20px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .subtitle {
+                font-size: 0.85rem;
+                margin-bottom: 1.35rem;
+            }
+            #code {
+                font-size: 1.25rem;
+                letter-spacing: 5px;
+                padding: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -218,17 +325,21 @@
 
     <div class="container">
         <div class="card">
-            <h1 id="brandTitle">RTNA WiFi Voucher</h1>
+            <h1 id="brandTitle">RTNA Wi-Fi</h1>
             <p class="subtitle" id="brandSubtitle">Silahkan masukkan kode voucher Anda</p>
             
             <form id="loginForm">
                 <div class="input-group">
-                    <label for="customerName">NAMA ANDA <span class="optional-tag">Opsional</span></label>
+                    <label for="customerName">
+                        NAMA ANDA <span class="optional-tag">Opsional</span>
+                    </label>
                     <input type="text" id="customerName" class="form-input" placeholder="Contoh: Adam / Viksa" autocomplete="name">
                 </div>
 
                 <div class="input-group">
-                    <label for="phoneNumber">NOMOR WHATSAPP <span class="optional-tag">Opsional</span></label>
+                    <label for="phoneNumber">
+                        NOMOR WHATSAPP <span class="optional-tag">Opsional</span>
+                    </label>
                     <input type="tel" id="phoneNumber" class="form-input" placeholder="Contoh: 08123456789" autocomplete="tel">
                     <div class="wa-hint">
                         <span>📲</span> Kode voucher & masa aktif akan dikirim ke WA Anda
@@ -236,7 +347,9 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="code">KODE VOUCHER <span style="color: #ef4444;">*</span></label>
+                    <label for="code">
+                        KODE VOUCHER <span style="color: #ef4444; margin-left: 3px;">*</span>
+                    </label>
                     <input type="text" id="code" name="code" placeholder="XXXXXX" maxlength="6" autocomplete="off" required>
                 </div>
                 
@@ -248,10 +361,22 @@
             
             <div id="statusMessage" class="message"></div>
 
-            <div class="warning-box">
-                <strong>💡 TIPS KONEKSI:</strong><br>
-                • <b>Auto-Connect:</b> Jangan hapus/lupakan jaringan WiFi ini agar HP otomatis terhubung ke internet tanpa memasukkan ulang kode selama masa aktif masih ada.<br>
-                • <b>Simpan Kode:</b> Isi nomor WA Anda di atas agar kode voucher tersimpan di chat jika sewaktu-waktu terputus.
+            <div class="info-guide-box">
+                <div class="igb-header">
+                    <span class="igb-icon">💡</span>
+                    <span class="igb-title">PANDUAN & TIPS KONEKSI:</span>
+                </div>
+                <ul class="igb-list">
+                    <li>
+                        <strong>Anti-Hilang:</strong> Isi nomor WhatsApp agar nomor voucher & masa aktif tersimpan di HP jika jaringan terputus.
+                    </li>
+                    <li>
+                        <strong>Koneksi Otomatis:</strong> Sekali login, internet langsung tersambung otomatis tanpa perlu ketik ulang kode selama masa sewa masih aktif.
+                    </li>
+                    <li>
+                        <strong>Portal Manual:</strong> Jika layar login tidak muncul otomatis saat terhubung Wi-Fi, buka browser dan ketik: <code>10.0.0.1:3000</code>
+                    </li>
+                </ul>
             </div>
 
         </div>
