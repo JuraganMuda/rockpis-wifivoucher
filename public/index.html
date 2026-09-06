@@ -205,6 +205,44 @@
 
         .message.error { color: var(--error); }
         .message.success { color: var(--success); }
+
+        /* Smart Saved Voucher Box */
+        .saved-code-box {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 0.85rem;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #6ee7b7;
+            text-align: left;
+        }
+
+        .saved-code-box strong {
+            letter-spacing: 1px;
+            color: #a7f3d0;
+        }
+
+        .btn-clear-saved {
+            background: none !important;
+            border: none !important;
+            color: #94a3b8 !important;
+            cursor: pointer;
+            font-size: 0.75rem !important;
+            padding: 2px 6px !important;
+            margin: 0 !important;
+            width: auto !important;
+            box-shadow: none !important;
+            text-decoration: underline;
+        }
+
+        .btn-clear-saved:hover {
+            color: #f87171 !important;
+            transform: none !important;
+        }
         
         /* Modern Guide Card */
         .info-guide-box {
@@ -352,6 +390,11 @@
                     </label>
                     <input type="text" id="code" name="code" placeholder="XXXXXX" maxlength="6" autocomplete="off" required>
                 </div>
+
+                <div id="savedCodeAlert" class="saved-code-box">
+                    <span>⚡ Kode tersimpan di HP: <strong id="savedCodeText">XXXXXX</strong></span>
+                    <button type="button" class="btn-clear-saved" id="clearSavedBtn" title="Hapus kode tersimpan">Ganti</button>
+                </div>
                 
                 <button type="submit" id="submitBtn">
                     <span id="btnText">Hubungkan</span>
@@ -442,14 +485,44 @@
         }
         loadPublicBranding();
 
-        // Check if there is an active session for this MAC address
-        async function checkAutoLogin() {
-            if (!clientmac) {
-                autoLoginOverlay.style.display = 'none';
-                return;
-            }
+        const savedCodeAlert = document.getElementById('savedCodeAlert');
+        const savedCodeText = document.getElementById('savedCodeText');
+        const clearSavedBtn = document.getElementById('clearSavedBtn');
 
+        // Fitur Smart LocalStorage: Cek apakah voucher sebelumnya tersimpan di HP ini
+        function checkSavedVoucher() {
             try {
+                const savedCode = localStorage.getItem('rtna_saved_code');
+                const savedName = localStorage.getItem('rtna_saved_name');
+                const savedPhone = localStorage.getItem('rtna_saved_phone');
+
+                if (savedName && !custNameInput.value) custNameInput.value = savedName;
+                if (savedPhone && !phoneInput.value) phoneInput.value = savedPhone;
+
+                if (savedCode) {
+                    codeInput.value = savedCode;
+                    savedCodeText.textContent = savedCode;
+                    savedCodeAlert.style.display = 'flex';
+                }
+            } catch (e) {
+                console.warn("Storage access not permitted:", e);
+            }
+        }
+
+        clearSavedBtn.addEventListener('click', () => {
+            try {
+                localStorage.removeItem('rtna_saved_code');
+            } catch (e) {}
+            codeInput.value = '';
+            savedCodeAlert.style.display = 'none';
+            codeInput.focus();
+        });
+
+        // Check if there is an active session for this device
+        async function checkAutoLogin() {
+            try {
+                // Selalu panggil backend /api/check_mac meskipun clientmac di URL kosong.
+                // Fastify akan membaca IP perangkat dan mencocokkan MAC via kernel ARP table!
                 const response = await fetch('/api/check_mac', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -459,12 +532,14 @@
                 const result = await response.json();
                 if (result.active && result.redirect) {
                     window.location.href = result.redirect;
-                } else {
-                    autoLoginOverlay.style.display = 'none';
+                    return;
                 }
             } catch (err) {
-                autoLoginOverlay.style.display = 'none';
+                console.warn("Auto login check error:", err);
             }
+
+            autoLoginOverlay.style.display = 'none';
+            checkSavedVoucher();
         }
 
         // Run auto login check
@@ -510,6 +585,13 @@
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
+                    // Simpan voucher sukses ke local storage perangkat
+                    try {
+                        localStorage.setItem('rtna_saved_code', code.toUpperCase());
+                        if (customer_name) localStorage.setItem('rtna_saved_name', customer_name);
+                        if (phone_number) localStorage.setItem('rtna_saved_phone', phone_number);
+                    } catch (e) {}
+
                     statusMessage.textContent = 'Berhasil! Mohon tunggu sebentar, mengalihkan Anda ke internet...';
                     statusMessage.className = 'message success';
                     
@@ -519,7 +601,15 @@
                         }
                     }, 1000);
                 } else {
-                    statusMessage.textContent = result.message || result.error || 'Terjadi kesalahan.';
+                    const errMsg = result.message || result.error || 'Terjadi kesalahan.';
+                    // Jika voucher sudah kedaluwarsa atau dicabut, bersihkan dari localStorage
+                    if (errMsg.includes('habis') || errMsg.includes('kedaluwarsa') || errMsg.includes('dicabut') || errMsg.includes('tidak ditemukan')) {
+                        try {
+                            localStorage.removeItem('rtna_saved_code');
+                            savedCodeAlert.style.display = 'none';
+                        } catch (e) {}
+                    }
+                    statusMessage.textContent = errMsg;
                     statusMessage.className = 'message error';
                 }
             } catch (err) {

@@ -83,6 +83,24 @@ heal() {
     # Update status voucher kedaluwarsa di database jika durasinya habis
     docker exec mariadb_nds mysql -u radius -pradius_password -e "UPDATE radius_db.vouchers SET status='expired' WHERE status='used' AND expires_at <= NOW();" >/dev/null 2>&1
 
+    # 7b. Otomatis Pulihkan (Auto-Restore) Sesi Klien yang Masih Aktif di Database
+    # Jika Docker / OpenNDS restart atau mati lampu, klien tidak perlu memasukkan ulang voucher!
+    AUTH_NOW=$(ndsctl json 2>/dev/null | grep -oE '"[0-9a-fA-F:]{17}":\{[^}]*"state":"Authenticated"' | grep -oE '([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}' | tr 'A-Z' 'a-z')
+    if [ -z "$AUTH_NOW" ]; then
+        AUTH_NOW=$(ndsctl status 2>/dev/null | grep -B 5 -A 10 "State: Authenticated" | grep -oE '([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}' | tr 'A-Z' 'a-z')
+    fi
+
+    ACTIVE_VOUCHERS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT LOWER(mac), CEIL(TIMESTAMPDIFF(SECOND, NOW(), expires_at)/60) FROM radius_db.vouchers WHERE status='used' AND expires_at > NOW() AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
+    if [ -n "$ACTIVE_VOUCHERS" ]; then
+        echo "$ACTIVE_VOUCHERS" | while read -r v_mac v_rem; do
+            if [ -n "$v_mac" ] && [ -n "$v_rem" ] && [ "$v_rem" -gt 0 ]; then
+                if ! echo "$AUTH_NOW" | grep -qi "$v_mac"; then
+                    nds_run "ndsctl auth $v_mac $v_rem"
+                fi
+            fi
+        done
+    fi
+
     # 8. Dump Status Live OpenNDS untuk dibaca oleh Live Monitoring Dashboard API
     if command -v ndsctl >/dev/null 2>&1; then
         ndsctl json 2>/dev/null > /tmp/nds_live_status.json.tmp && mv /tmp/nds_live_status.json.tmp /tmp/nds_live_status.json 2>/dev/null || true

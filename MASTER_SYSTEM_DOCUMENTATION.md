@@ -57,7 +57,7 @@ flowchart TD
         subgraph DockerLayer ["Docker Containers"]
             NodeAPI["node_api Fastify<br/>Port 3000 (Splash dan API)"]
             MariaDB["mariadb_nds<br/>Port 3306 (Voucher DB)"]
-            Cloudflared["cloudflared_tunnel<br/>api.rtnawifi.my.id"]
+            Cloudflared["cloudflared_tunnel<br/><DOMAIN_API_ANDA_DISINI>"]
         end
     end
     
@@ -239,7 +239,7 @@ Untuk menjamin integritas dan kekebalan data terhadap perubahan struktur direkto
 > Berkat penguncian ini, pengguna atau administrator bebas mengubah nama folder proyek kapan pun (misalnya `/root/rockpis-wifivoucher`, `/root/hotspot`, dsb.) di sistem host mana pun tanpa risiko data voucher terputus atau ter-reset. Docker Compose akan selalu mengenali dan menautkan kontainer MariaDB ke volume persisten `rockpis_voucher_db_data`.
 
 ### F. Cloudflare Tunnel (Inbound Access Tanpa Port Forwarding)
-- Menghubungkan domain publik `api.rtnawifi.my.id` langsung ke port 3000 di dalam Rock Pi S.
+- Menghubungkan domain publik `<DOMAIN_API_ANDA_DISINI>` langsung ke port 3000 di dalam Rock Pi S.
 - Bebas dari kebutuhan IP Publik Statis, DDNS, ataupun pembukaan port di router Advan (bebas blokir CGNAT provider seluler).
 
 ---
@@ -252,7 +252,7 @@ Demi menjaga ketersediaan RAM 512MB, sistem **tidak memiliki panel dashboard adm
 sequenceDiagram
     autonumber
     actor Admin as Admin HP AppSheet
-    participant CF as Cloudflare Edge (api.rtnawifi.my.id)
+    participant CF as Cloudflare Edge (<DOMAIN_API_ANDA_DISINI>)
     participant Tunnel as Cloudflare Tunnel
     participant Fastify as Node.js API (Port 3000)
     participant DB as MariaDB (radius_db)
@@ -270,14 +270,14 @@ sequenceDiagram
 ```
 
 ### A. Format Standar Pembuatan Voucher (POST /api/generate)
-- **URL:** `https://api.rtnawifi.my.id/api/generate`
+- **URL:** `https://<DOMAIN_API_ANDA_DISINI>/api/generate`
 - **Method:** `POST`
-- **Headers:** `x-api-key: rahasia-appsheet-123`
+- **Headers:** `x-api-key: <KUNCI_API_RAHASIA_ANDA>`
 - **Body JSON:**
   ```json
   {
     "Status": "24 Jam/1 Hari",
-    "Assignee": "VIKSA"
+    "Assignee": "Pelanggan"
   }
   ```
 - **Karakter Kode Voucher:** Dibuat menggunakan alfabet khusus (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`) tanpa karakter membingungkan seperti angka `0`, huruf `O`, angka `1`, dan huruf `I`.
@@ -293,7 +293,7 @@ Untuk mengatasi kelemahan di mana voucher yang dihapus di AppSheet penggunanya m
 sequenceDiagram
     autonumber
     actor Admin as Admin HP AppSheet
-    participant CF as Cloudflare Edge (api.rtnawifi.my.id)
+    participant CF as Cloudflare Edge (<DOMAIN_API_ANDA_DISINI>)
     participant Fastify as Node.js API (Port 3000)
     participant DB as MariaDB (radius_db)
     participant NDS as OpenNDS (Linux Host)
@@ -319,10 +319,10 @@ sequenceDiagram
    - **Table:** Pilih tabel voucher Anda (misal: `Table 1`).
 5. Atur **Step (Run a task)**:
    - **Task type:** `Call a webhook`
-   - **Url:** `https://api.rtnawifi.my.id/api/revoke`
+   - **Url:** `https://<DOMAIN_API_ANDA_DISINI>/api/revoke`
    - **HTTP Verb:** `POST`
    - **HTTP Headers:**
-     - Key: `x-api-key`, Value: `rahasia-appsheet-123`
+     - Key: `x-api-key`, Value: `<KUNCI_API_RAHASIA_ANDA>`
      - Key: `Content-Type`, Value: `application/json`
    - **Body JSON Template:**
      ```json
@@ -339,7 +339,7 @@ sequenceDiagram
 
 Bagi pemilik jaringan, mengamati siapa saja yang sedang terhubung ke Wi-Fi saat ini sangat penting. Tersedia antarmuka **Live Monitoring Dashboard** berbasis web yang sangat ringan (< 150KB), hemat memori, responsif di ponsel (*mobile-first*), dan dapat diakses dari mana saja tanpa VPN:
 
-- **Alamat URL:** `https://api.rtnawifi.my.id/admin` (atau `http://10.0.0.1:3000/admin` jika terhubung ke hotspot lokal)
+- **Alamat URL:** `https://<DOMAIN_API_ANDA_DISINI>/admin` (atau `http://10.0.0.1:3000/admin` jika terhubung ke hotspot lokal)
 - **Keamanan:** Dilindungi **PIN Admin** (Default: `123456`, dapat diubah via environment `ADMIN_PIN`).
 
 ```text
@@ -352,7 +352,7 @@ Bagi pemilik jaringan, mengamati siapa saja yang sedang terhubung ke Wi-Fi saat 
 ├──────────────┬──────────────┬──────────────┬──────────────┬────────────┤
 │ PELANGGAN    │ KODE VOUCHER │ IP & MAC     │ SISA WAKTU   │ AKSI CEPAT │
 ├──────────────┼──────────────┼──────────────┼──────────────┼────────────┤
-│ VIKSA        │ 5MASTH       │ 10.0.0.45    │ 6h 18j 22m   │ [🛑 Kick]  │
+│ Pelanggan    │ 5MASTH       │ 10.0.0.45    │ 6h 18j 22m   │ [🛑 Kick]  │
 │ 🟢 Online    │              │ 84:2a:fd:... │ (Countdown)  │ [🗑️ Hapus] │
 └──────────────┴──────────────┴──────────────┴──────────────┴────────────┘
 ```
@@ -465,7 +465,7 @@ Jika sewaktu-waktu Anda ingin memeriksa kondisi kesehatan sistem dari terminal k
 | Kebutuhan | Perintah Terminal |
 | :--- | :--- |
 | **Lihat Seluruh Kontainer** | `docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'` |
-| **Lihat Daftar Voucher di Database** | `docker exec mariadb_nds mysql -u radius -pradius_password radius_db -e "SELECT id, code, duration_minutes, status, mac, expires_at FROM vouchers ORDER BY id DESC LIMIT 10;"` |
+| **Lihat Daftar Voucher di Database** | `docker exec mariadb_nds mysql -u radius -p<PASSWORD_DATABASE_ANDA> radius_db -e "SELECT id, code, duration_minutes, status, mac, expires_at FROM vouchers ORDER BY id DESC LIMIT 10;"` |
 | **Lihat Log Aktivitas Login Pelanggan** | `docker logs --tail 25 -f node_api` |
 | **Lihat Log Terowongan Cloudflare** | `docker logs --tail 25 cloudflared_tunnel` |
 
@@ -487,5 +487,6 @@ Infrastruktur ini tidak lagi rapuh terhadap pemadaman listrik, tidak membebani m
 
 ---
 
-> "Salam Hangat dari Bintaro - Indonesia"  
-> [@JuraganMuda](https://www.instagram.com/juraganmuda/) | IG
+Sistem ini didedikasikan untuk memajukan infrastruktur RT/RW Net berbasis perangkat hemat daya. Selamat mengembangkan arsitektur jaringan yang tangguh!  
+Salam Dua Jari dari Bintaro - Indonesia  
+@JuraganMuda | IG
