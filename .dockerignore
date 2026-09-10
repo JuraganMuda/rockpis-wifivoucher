@@ -1,0 +1,15 @@
+.git
+.gitignore
+.gitattributes
+.env
+.env.*
+node_modules
+npm-debug.log
+*.md
+*.pdf
+*.html
+!public/
+build_pdf.js
+voucher_watchdog.sh
+custombinauth.sh
+init.sql

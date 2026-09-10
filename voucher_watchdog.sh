@@ -4,6 +4,10 @@
 # Menjamin kelancaran internet & auto-login pelanggan
 # ==========================================================
 
+DB_USER="${DB_USER:-radius}"
+DB_PASSWORD="${DB_PASSWORD:-radius_password}"
+DB_NAME="${DB_NAME:-radius_db}"
+
 nds_run() {
     local cmd="$1"
     for i in 1 2 3 4 5; do
@@ -70,7 +74,7 @@ heal() {
     done
 
     # 7. Otomatis Deauth & Untrust SEMUA voucher yang telah kedaluwarsa atau dicabut
-    EXPIRED_MACS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT DISTINCT LOWER(mac) FROM radius_db.vouchers WHERE (status='expired' OR status='revoked' OR (status='used' AND expires_at <= NOW())) AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
+    EXPIRED_MACS=$(docker exec mariadb_nds mysql -u "$DB_USER" -p"$DB_PASSWORD" -N -e "SELECT DISTINCT LOWER(mac) FROM $DB_NAME.vouchers WHERE (status='expired' OR status='revoked' OR (status='used' AND expires_at <= NOW())) AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
     for m in $EXPIRED_MACS; do
         nds_run "ndsctl deauth $m"
         nds_run "ndsctl untrust $m"
@@ -81,7 +85,7 @@ heal() {
     done
 
     # Update status voucher kedaluwarsa di database jika durasinya habis
-    docker exec mariadb_nds mysql -u radius -pradius_password -e "UPDATE radius_db.vouchers SET status='expired' WHERE status='used' AND expires_at <= NOW();" >/dev/null 2>&1
+    docker exec mariadb_nds mysql -u "$DB_USER" -p"$DB_PASSWORD" -e "UPDATE $DB_NAME.vouchers SET status='expired' WHERE status='used' AND expires_at <= NOW();" >/dev/null 2>&1
 
     # 7b. Otomatis Pulihkan (Auto-Restore) Sesi Klien yang Masih Aktif di Database
     # Jika Docker / OpenNDS restart atau mati lampu, klien tidak perlu memasukkan ulang voucher!
@@ -90,7 +94,7 @@ heal() {
         AUTH_NOW=$(ndsctl status 2>/dev/null | grep -B 5 -A 10 "State: Authenticated" | grep -oE '([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}' | tr 'A-Z' 'a-z')
     fi
 
-    ACTIVE_VOUCHERS=$(docker exec mariadb_nds mysql -u radius -pradius_password -N -e "SELECT LOWER(mac), CEIL(TIMESTAMPDIFF(SECOND, NOW(), expires_at)/60) FROM radius_db.vouchers WHERE status='used' AND expires_at > NOW() AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
+    ACTIVE_VOUCHERS=$(docker exec mariadb_nds mysql -u "$DB_USER" -p"$DB_PASSWORD" -N -e "SELECT LOWER(mac), CEIL(TIMESTAMPDIFF(SECOND, NOW(), expires_at)/60) FROM $DB_NAME.vouchers WHERE status='used' AND expires_at > NOW() AND mac IS NOT NULL AND mac NOT LIKE 'ip-%';" 2>/dev/null)
     if [ -n "$ACTIVE_VOUCHERS" ]; then
         echo "$ACTIVE_VOUCHERS" | while read -r v_mac v_rem; do
             if [ -n "$v_mac" ] && [ -n "$v_rem" ] && [ "$v_rem" -gt 0 ]; then
