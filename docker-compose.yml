@@ -47,7 +47,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared_tunnel
     restart: always
-    command: tunnel run --token eyJhIjoiYTAwODhkZGI1OGE3ODg0MDIyZmFhMzI5NmM0MDE3MzkiLCJ0IjoiMzlhZDY2MGMtNzg1OC00NGM2LWE4MzEtZDliMzdlYWM1MDgzIiwicyI6IlpXTTRNamcxTldFdFlXTmtOUzAwTkRWaExXRXhPVGd0TldJeVlURXhNelpqTlRoaiJ9
+    command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     deploy:
       resources:
         limits:

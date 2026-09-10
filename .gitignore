@@ -4,6 +4,7 @@ node_modules/
 # Environment variables, secrets, & credentials
 .env
 .env.*
+!.env.example
 *.ppk
 *.pem
 *.key

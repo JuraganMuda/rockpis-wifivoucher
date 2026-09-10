@@ -1,5 +1,6 @@
 # RTNA Wi-Fi Voucher System (Captive Portal SBC)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Hardware](<https://img.shields.io/badge/Hardware-Rock%20Pi%20S%20(512MB)-blueviolet.svg>)](#)
 [![Stack](https://img.shields.io/badge/Stack-Fastify%20%7C%20MariaDB%20%7C%20OpenNDS-indigo.svg)](#)
 [![Ingress](https://img.shields.io/badge/Tunnel-Cloudflare%20Zero%20Trust-orange.svg)](#)
@@ -26,6 +27,7 @@ rockpis-wifivoucher/
 ├── public/
 │   ├── index.html               # Splash page captive portal (desain modern & responsive)
 │   └── admin.html               # Live Active User Monitor & Control Center (Mobile-First)
+├── .env.example                 # Template variabel lingkungan (Cloudflare Tunnel, dsb)
 ├── .gitignore                   # Aturan pengabaian file sementara & rahasia
 ├── docker-compose.yml           # Orkestrasi kontainer (node_api, mariadb_nds, cloudflared)
 ├── Dockerfile                   # Spesifikasi container Node.js 20 Alpine Fastify
@@ -35,6 +37,7 @@ rockpis-wifivoucher/
 ├── voucher_watchdog.sh          # Daemon pengawas 24/7 (PLN-Proof, NAT, instant queue, sync trusted MAC)
 ├── build_pdf.js                 # Generator cetak PDF dokumentasi A4
 ├── MASTER_SYSTEM_DOCUMENTATION.md # Buku panduan teknis & arsitektur sistem
+├── LICENSE                      # Lisensi open source (MIT)
 └── README.md                    # Ringkasan proyek GitHub
 ```
 
@@ -81,8 +84,12 @@ apt update && apt install -y docker.io docker-compose-plugin opennds dnsmasq ipt
 
 ```bash
 # Clone repositori ke direktori kerja
-git clone https://github.com/<username>/rockpis-wifivoucher.git /root/rockpis-wifivoucher
+git clone https://github.com/JuraganMuda/rockpis-wifivoucher.git /root/rockpis-wifivoucher
 cd /root/rockpis-wifivoucher
+
+# Siapkan file environment dari template
+cp .env.example .env
+nano .env   # Masukkan token Cloudflare Tunnel Anda (CLOUDFLARE_TUNNEL_TOKEN)
 
 # Jalankan seluruh service (Fastify, MariaDB, Cloudflare Tunnel)
 docker compose up -d
@@ -110,7 +117,8 @@ systemctl enable --now voucher-watchdog.service
 
 ## 🛡️ Lisensi & Hak Cipta
 
-Sistem dikembangkan untuk jaringan mandiri **RTNA Wi-Fi Hotspot**. Bebas digunakan dan disesuaikan untuk implementasi jaringan mikro / RT-RW Net berbasis perangkat hemat daya.
+Proyek ini didistribusikan di bawah lisensi open source **MIT License**. Lihat berkas [`LICENSE`](./LICENSE) untuk informasi lebih lanjut.  
+Bebas digunakan dan disesuaikan untuk implementasi jaringan mikro / RT-RW Net berbasis perangkat hemat daya.
 
 ---
 
